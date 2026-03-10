@@ -27,6 +27,7 @@ Notes
 
 - The project includes separated screen files in `screens/` and a small `components/ProgressBar.js`.
 - Navigation is wired using React Navigation (`@react-navigation/native`, stack and bottom tabs).
+- Local build/cache artifacts are intentionally ignored by git (for example `.expo/`, `node_modules/.cache/`, and `.DS_Store`).
 
 ## Features
 
