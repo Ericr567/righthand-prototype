@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {ScrollView, Text, TouchableOpacity, View, StyleSheet} from 'react-native';
+import React from 'react';
+import {ScrollView, Text, View} from 'react-native';
 
 import common, {SPACING} from '../styles/common';
 
@@ -11,17 +11,13 @@ export default function HelpScreen(){
     {q:'How do I add or remove a bill?', a:'Go to the dashboard, tap "Add Bill" to create one. To remove an existing bill, open its details and choose delete.'},
     {q:'How secure is RightHand?', a:'We use industry-standard encryption and never store your bank credentials. All sensitive operations occur securely on trusted servers.'}
   ];
-  const [openIndex,setOpenIndex] = useState(null);
 
   return (
     <ScrollView style={common.screen}>
-      <Text style={common.title}>Help Center</Text>
+      <Text style={[common.title, common.titleBlock]}>Help Center</Text>
       {faqs.map((item,i)=>(
         <View key={i} style={{marginTop:SPACING.sm}}>
-          <TouchableOpacity onPress={()=>setOpenIndex(openIndex===i?null:i)}>
-            <Text style={common.question}>{item.q}</Text>
-          </TouchableOpacity>
-          {openIndex===i && <Text style={common.answer}>{item.a}</Text>}
+          <Text style={[common.body, common.question]}>• {item.q}</Text>
         </View>
       ))}
     </ScrollView>

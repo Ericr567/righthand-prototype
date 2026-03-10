@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 import React, {useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {createStackNavigator} from '@react-navigation/stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import WelcomeScreen from './screens/WelcomeScreen';
 import SignupScreen from './screens/SignupScreen';
@@ -18,7 +18,7 @@ import SettingsScreen from './screens/SettingsScreen';
 import HelpScreen from './screens/HelpScreen';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 const Tabs = createBottomTabNavigator();
 
 export default function App(){
@@ -86,7 +86,9 @@ export default function App(){
           </Stack.Screen>
 
           <Stack.Screen name="AddPaycheck" component={AddPaycheckScreen} options={{title:'Your Pay Schedule'}} />
-          <Stack.Screen name="Savings" component={SavingsBreakdownScreen} options={{title:'Savings Breakdown'}} />
+          <Stack.Screen name="Savings" options={{title:'Savings Breakdown'}}>
+            {props => <SavingsBreakdownScreen {...props} bills={bills} />}
+          </Stack.Screen>
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="Help" component={HelpScreen} />
         </Stack.Navigator>

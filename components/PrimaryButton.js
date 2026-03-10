@@ -1,6 +1,6 @@
 import React from 'react';
 import {TouchableOpacity, Text, StyleSheet} from 'react-native';
-import common, {SPACING, COLORS} from '../styles/common';
+import {SPACING, COLORS} from '../styles/common';
 
 export default function PrimaryButton({title, onPress, style, textStyle, accessibilityLabel}){
   return (
@@ -22,6 +22,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     borderRadius: 8,
     alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   text: {
     color: '#fff',

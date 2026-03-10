@@ -1,4 +1,4 @@
-RightHand — Prototype (Expo React Native)
+RightHand — Website Prototype (Expo + React Native Web)
 
 Quick start
 
@@ -9,18 +9,24 @@ cd righthand-prototype
 npm install
 ```
 
-2. Start Expo:
+2. Start website dev server:
 
 ```bash
-npx expo start
+npm start
 ```
 
-3. Open on a device or simulator via Metro UI.
+3. Open the local URL shown in terminal (usually `http://localhost:19006`).
+
+Build static website output:
+
+```bash
+npm run build:web
+```
 
 Notes
 
 - The project includes separated screen files in `screens/` and a small `components/ProgressBar.js`.
-- Navigation is wired using React Navigation (`@react-navigation/native`, native stack and bottom tabs).
+- Navigation is wired using React Navigation (`@react-navigation/native`, stack and bottom tabs).
 
 ## Features
 
