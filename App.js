@@ -16,7 +16,7 @@ import AutoPayScreen from './screens/AutoPayScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import HelpScreen from './screens/HelpScreen';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 
 const Stack = createStackNavigator();
 const Tabs = createBottomTabNavigator();
@@ -51,9 +51,10 @@ export default function App(){
   }
 
   return (
-    <SafeAreaView style={{flex:1}}>
-      <NavigationContainer>
-        <Stack.Navigator>
+    <SafeAreaProvider>
+      <SafeAreaView style={{flex:1}}>
+        <NavigationContainer>
+          <Stack.Navigator>
           <Stack.Screen name="Welcome" component={WelcomeScreen} options={{headerShown:false}} />
           <Stack.Screen name="Signup" component={SignupScreen} options={{title:'Create Your Account'}} />
           <Stack.Screen name="BankConnect" component={BankConnectScreen} options={{title:'Connect Your Bank'}} />
@@ -91,8 +92,9 @@ export default function App(){
           </Stack.Screen>
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="Help" component={HelpScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </SafeAreaView>
+          </Stack.Navigator>
+        </NavigationContainer>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
