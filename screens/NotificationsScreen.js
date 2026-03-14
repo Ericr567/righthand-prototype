@@ -1,29 +1,142 @@
 import React from 'react';
-import {ScrollView, Text, View, TouchableOpacity, StyleSheet} from 'react-native';
+import {ScrollView, Text, View, TouchableOpacity, StyleSheet, Switch} from 'react-native';
 
 import common, {SPACING, COLORS} from '../styles/common';
 
-export default function NotificationsScreen(){
-  const [notes,setNotes] = React.useState([
-    "$38 saved from your paycheck today",
-    "Rent will be paid in 2 days",
-    "Internet bill amount changed – review needed",
-    "Payment successful: Light Bill"
-  ]);
+export default function NotificationsScreen({bills=[]}){
+  const [inApp,  setInApp]  = React.useState(true);
+  const [phone,  setPhone]  = React.useState(false);
+
+  const initialNotes = React.useMemo(() => bills.flatMap((bill) => {
+    const remaining = Math.max(0, (Number(bill.amount) || 0) - (Number(bill.saved) || 0));
+    return [
+      {id:`${bill.id}-a`, type:'savings', text:`${bill.name}: $${bill.saved || 0} saved so far`},
+      {id:`${bill.id}-b`, type:'due',     text:`${bill.name} is due on day ${bill.due}`},
+      {id:`${bill.id}-c`, type:'status',  text:`${bill.name} auto-pay is ${bill.autoPay ? 'On' : 'Off'} — ${remaining > 0 ? `$${remaining} remaining` : 'Fully funded'}`},
+    ];
+  }), [bills]);
+
+  const [notes, setNotes] = React.useState(initialNotes);
+  React.useEffect(() => { setNotes(initialNotes); }, [initialNotes]);
+
+  const unread = notes.length;
+
+  const typeIcon  = {savings:'💰', due:'📅', status:'⚡'};
+  const typeColor = {savings:COLORS.successBg, due:'#EEF2FF', status:'#FFF8E1'};
+  const typeBorder= {savings:COLORS.successBorder, due:'#C7D2FE', status:'#FFE082'};
+
   return (
-    <ScrollView style={common.screen}>
-      <Text style={[common.title, common.titleBlock]}>Notifications</Text>
-      {notes.map((n,i)=>(<View key={i} style={styles.note}><Text style={common.body}>{n}</Text></View>))}
-      {notes.length > 0 && (
-        <TouchableOpacity style={styles.button} onPress={()=>setNotes([])}><Text style={common.body}>Mark All as Read</Text></TouchableOpacity>
+    <ScrollView style={common.screen} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header */}
+      <View style={styles.headerRow}>
+        <Text style={styles.screenTitle}>Notifications</Text>
+        {unread > 0 && (
+          <View style={styles.badge}><Text style={styles.badgeText}>{unread}</Text></View>
+        )}
+      </View>
+
+      {/* Delivery preferences */}
+      <View style={styles.prefCard}>
+        <Text style={styles.prefTitle}>Delivery Preferences</Text>
+        <View style={styles.prefRow}>
+          <View>
+            <Text style={styles.prefLabel}>In-app notifications</Text>
+            <Text style={styles.prefSub}>Alerts inside RightHand</Text>
+          </View>
+          <Switch
+            value={inApp}
+            onValueChange={setInApp}
+            trackColor={{false:COLORS.border, true:COLORS.primary}}
+            thumbColor={COLORS.white}
+          />
+        </View>
+        <View style={[styles.prefRow, {borderTopWidth:1, borderTopColor:COLORS.border}]}>
+          <View>
+            <Text style={styles.prefLabel}>Phone notifications</Text>
+            <Text style={styles.prefSub}>Push alerts on your device</Text>
+          </View>
+          <Switch
+            value={phone}
+            onValueChange={setPhone}
+            trackColor={{false:COLORS.border, true:COLORS.primary}}
+            thumbColor={COLORS.white}
+          />
+        </View>
+      </View>
+
+      {/* Notification items */}
+      <View style={styles.listHeader}>
+        <Text style={styles.listTitle}>Recent Activity</Text>
+        {notes.length > 0 && (
+          <TouchableOpacity onPress={() => setNotes([])}>
+            <Text style={styles.markRead}>Mark all read</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {notes.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>All caught up!</Text>
+          <Text style={styles.emptyBody}>No new notifications right now.</Text>
+        </View>
+      ) : (
+        notes.map((n, i) => (
+          <View key={n.id || i} style={[styles.noteCard, {backgroundColor: typeColor[n.type] || COLORS.white, borderColor: typeBorder[n.type] || COLORS.border}]}>
+            <Text style={styles.noteIcon}>{typeIcon[n.type] || '🔔'}</Text>
+            <Text style={styles.noteText}>{n.text}</Text>
+          </View>
+        ))
       )}
-      {notes.length === 0 && <Text style={[common.caption, styles.emptyText]}>No new notifications</Text>}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  note:{padding:SPACING.sm,backgroundColor:COLORS.background,borderRadius:8,marginVertical:SPACING.xs,borderWidth:1,borderColor:COLORS.border},
-  button:{backgroundColor:COLORS.subtleBg,borderWidth:1,borderColor:COLORS.border,padding:SPACING.sm,borderRadius:8,marginTop:SPACING.md,alignItems:'center'},
-  emptyText:{marginTop:SPACING.md}
+  container:{padding:SPACING.md, paddingBottom:60},
+
+  headerRow:{flexDirection:'row',alignItems:'center',marginBottom:SPACING.md},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text},
+  badge:{
+    marginLeft:10,backgroundColor:COLORS.primary,borderRadius:12,
+    paddingHorizontal:8,paddingVertical:2,
+  },
+  badgeText:{fontSize:12,fontWeight:'700',fontFamily:'Inter',color:COLORS.white},
+
+  prefCard:{
+    backgroundColor:COLORS.white,
+    borderRadius:16,
+    borderWidth:1,
+    borderColor:COLORS.border,
+    marginBottom:SPACING.md,
+    overflow:'hidden',
+    shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.05,shadowRadius:6,elevation:2,
+  },
+  prefTitle:{
+    fontSize:11,fontWeight:'700',fontFamily:'Inter',
+    color:COLORS.textSecondary,letterSpacing:1,textTransform:'uppercase',
+    paddingHorizontal:SPACING.md,paddingTop:SPACING.sm,paddingBottom:4,
+  },
+  prefRow:{
+    flexDirection:'row',alignItems:'center',justifyContent:'space-between',
+    paddingHorizontal:SPACING.md,paddingVertical:14,
+  },
+  prefLabel:{fontSize:15,fontWeight:'500',fontFamily:'Inter',color:COLORS.text},
+  prefSub:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+
+  listHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:SPACING.sm},
+  listTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:COLORS.text},
+  markRead:{fontSize:13,fontFamily:'Inter',color:COLORS.primary,fontWeight:'600'},
+
+  emptyCard:{backgroundColor:COLORS.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:COLORS.border,alignItems:'center'},
+  emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:COLORS.text,marginBottom:4},
+  emptyBody:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary},
+
+  noteCard:{
+    flexDirection:'row',alignItems:'flex-start',
+    borderRadius:12,padding:SPACING.md,
+    marginBottom:8,borderWidth:1,
+  },
+  noteIcon:{fontSize:18,marginRight:10,marginTop:1},
+  noteText:{flex:1,fontSize:14,fontFamily:'Inter',color:COLORS.text,lineHeight:20},
 });
+

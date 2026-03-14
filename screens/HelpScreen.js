@@ -1,25 +1,103 @@
-import React from 'react';
-import {ScrollView, Text, View} from 'react-native';
+import React, {useState} from 'react';
+import {ScrollView, Text, View, TouchableOpacity, StyleSheet, Linking} from 'react-native';
 
-import common, {SPACING} from '../styles/common';
+import common, {SPACING, COLORS} from '../styles/common';
+
+const FAQS = [
+  {q:'How does RightHand automatically save for my bills?', a:'RightHand sets aside small amounts from each paycheck so your bill money is ready before due dates.'},
+  {q:'When does RightHand move money into savings?', a:'Transfers are timed around your pay schedule and upcoming bills, so savings happen at the right moments.'},
+  {q:'How is my savings amount calculated each pay period?', a:'We look at your upcoming bills and split the needed amount across your next paychecks.'},
+  {q:'Can I skip a savings transfer if money is tight?', a:'Yes. You can pause or skip a transfer and turn it back on when you are ready.'},
+  {q:'How do I turn auto-pay on or off for a specific bill?', a:'Go to Bills and use the Auto-Pay toggle on that bill card.'},
+  {q:'What happens if my bill amount changes unexpectedly?', a:'You will get a reminder, then you can update the bill amount or adjust your schedule before it is due.'},
+  {q:'Can I connect my bank later and still explore the app now?', a:'Yes. You can skip bank connection during setup and connect anytime from Settings.'},
+  {q:'How do I add, edit, or remove a bill?', a:'Tap + Add New Bill to create one, or open Bill Details to edit or delete an existing bill.'},
+  {q:'How do notifications work for upcoming bills and transfers?', a:'RightHand sends alerts for savings transfers, bill due dates, and payment updates.'},
+  {q:'Can I get notifications sent to my phone, not just in-app?', a:'Yes. Turn on phone notifications in the Notifications screen to get device alerts.'},
+  {q:'What should I do if a payment fails?', a:'Check your account balance and bill details, then retry payment or update the bill settings.'},
+  {q:'Is my bank and personal information secure with RightHand?', a:'Yes. RightHand uses secure connections and industry-standard encryption to protect your data.'},
+];
 
 export default function HelpScreen(){
-  const faqs = [
-    {q:'How does RightHand save money?', a:'RightHand automatically sets aside small amounts from your paycheck so you build up a buffer without thinking about it.'},
-    {q:'How do automatic payments work?', a:'Your bills are paid automatically on the due date using the funds you’ve saved. You can always edit or cancel payments.'},
-    {q:'What if a bill changes?', a:'If a bill amount changes, you’ll receive a notification and can adjust the scheduled payment or savings amount accordingly.'},
-    {q:'How do I add or remove a bill?', a:'Go to the dashboard, tap "Add Bill" to create one. To remove an existing bill, open its details and choose delete.'},
-    {q:'How secure is RightHand?', a:'We use industry-standard encryption and never store your bank credentials. All sensitive operations occur securely on trusted servers.'}
-  ];
+  const [open, setOpen] = useState(null);
 
   return (
-    <ScrollView style={common.screen}>
-      <Text style={[common.title, common.titleBlock]}>Help Center</Text>
-      {faqs.map((item,i)=>(
-        <View key={i} style={{marginTop:SPACING.sm}}>
-          <Text style={[common.body, common.question]}>• {item.q}</Text>
+    <ScrollView style={common.screen} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <Text style={styles.screenTitle}>Help Center</Text>
+      <Text style={styles.screenSub}>Find answers to common questions below.</Text>
+
+      {FAQS.map((item, i) => {
+        const isOpen = open === i;
+        return (
+          <View key={i} style={[styles.faqCard, isOpen && styles.faqCardOpen]}>
+            <TouchableOpacity style={styles.faqHeader} onPress={() => setOpen(isOpen ? null : i)} activeOpacity={0.8}>
+              <Text style={[styles.faqQuestion, isOpen && styles.faqQuestionOpen]}>{item.q}</Text>
+              <Text style={[styles.chevron, isOpen && styles.chevronOpen]}>{isOpen ? '−' : '+'}</Text>
+            </TouchableOpacity>
+            {isOpen && (
+              <View style={styles.faqBody}>
+                <Text style={styles.faqAnswer}>{item.a}</Text>
+              </View>
+            )}
+          </View>
+        );
+      })}
+
+      <TouchableOpacity style={styles.contactCard} onPress={() => Linking.openURL('https://example.com/help')} activeOpacity={0.8}>
+        <View>
+          <Text style={styles.contactTitle}>Still need help?</Text>
+          <Text style={styles.contactSub}>Visit our full Help Center</Text>
         </View>
-      ))}
+        <Text style={styles.contactArrow}>→</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container:{padding:SPACING.md, paddingBottom:60},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text,marginBottom:4},
+  screenSub:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary,marginBottom:SPACING.md},
+
+  faqCard:{
+    backgroundColor:COLORS.white,
+    borderRadius:14,marginBottom:8,
+    borderWidth:1,borderColor:COLORS.border,
+    overflow:'hidden',
+    shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.04,shadowRadius:4,elevation:1,
+  },
+  faqCardOpen:{borderColor:COLORS.primary},
+
+  faqHeader:{
+    flexDirection:'row',alignItems:'center',justifyContent:'space-between',
+    padding:SPACING.md,
+  },
+  faqQuestion:{
+    flex:1,fontSize:14,fontWeight:'500',fontFamily:'Inter',color:COLORS.text,
+    paddingRight:SPACING.sm,lineHeight:20,
+  },
+  faqQuestionOpen:{color:COLORS.primary,fontWeight:'600'},
+  chevron:{
+    fontSize:18,fontWeight:'700',fontFamily:'Inter',
+    color:COLORS.border,width:22,textAlign:'center',
+  },
+  chevronOpen:{color:COLORS.primary},
+
+  faqBody:{
+    paddingHorizontal:SPACING.md,paddingBottom:SPACING.md,
+    borderTopWidth:1,borderTopColor:COLORS.border,
+    paddingTop:SPACING.sm,
+  },
+  faqAnswer:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary,lineHeight:21},
+
+  contactCard:{
+    backgroundColor:COLORS.primary,
+    borderRadius:16,padding:SPACING.lg,marginTop:SPACING.sm,
+    flexDirection:'row',alignItems:'center',justifyContent:'space-between',
+    shadowColor:'#000',shadowOffset:{width:0,height:4},shadowOpacity:0.12,shadowRadius:10,elevation:3,
+  },
+  contactTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:'#fff'},
+  contactSub:{fontSize:13,fontFamily:'Inter',color:'rgba(255,255,255,0.75)',marginTop:2},
+  contactArrow:{fontSize:22,color:'#fff',fontWeight:'300'},
+});
+

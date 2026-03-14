@@ -4,43 +4,101 @@ import {ScrollView, Text, TextInput, TouchableOpacity, StyleSheet, View} from 'r
 import common, {SPACING, COLORS} from '../styles/common';
 import PrimaryButton from '../components/PrimaryButton';
 
+const FREQUENCIES = ['Weekly', 'Bi-weekly', 'Semi-monthly', 'Monthly'];
+
 export default function AddPaycheckScreen({navigation}){
-  const [freq,setFreq]=useState('Bi-weekly');
-  const [nextDate,setNextDate]=useState('2026-03-01');
-  const [amt,setAmt]=useState('');
-  const [showFrequencyDropdown, setShowFrequencyDropdown] = useState(false);
-  const frequencies = ['Weekly', 'Bi-weekly', 'Semi-monthly', 'Monthly'];
+  const [freq,     setFreq]     = useState('Bi-weekly');
+  const [nextDate, setNextDate] = useState('2026-03-01');
+  const [amt,      setAmt]      = useState('');
 
   return (
-    <ScrollView contentContainerStyle={[styles.form, common.screen]}>
-      <Text style={[common.title, common.titleBlock]}>Your Pay Schedule</Text>
+    <ScrollView style={common.screen} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <Text style={styles.screenTitle}>Pay Schedule</Text>
+      <Text style={styles.screenSub}>Tell RightHand when you get paid so it can plan your savings automatically.</Text>
 
-      <Text style={common.sectionTitle}>How often are you paid?</Text>
-      <TouchableOpacity style={common.input} onPress={() => setShowFrequencyDropdown((prev) => !prev)}>
-        <Text style={common.body}>Dropdown: {freq}</Text>
-      </TouchableOpacity>
-      {showFrequencyDropdown && (
-        <View style={styles.optionsWrap}>
-          {frequencies.map((item) => (
-            <TouchableOpacity key={item} onPress={() => { setFreq(item); setShowFrequencyDropdown(false); }} style={[styles.optionBtn, freq === item && styles.optionSelected]}>
-              <Text style={freq === item ? styles.optionSelectedText : common.body}>{item}</Text>
+      <View style={styles.formCard}>
+        <Text style={styles.fieldLabel}>How often are you paid?</Text>
+        <View style={styles.chipRow}>
+          {FREQUENCIES.map(f => (
+            <TouchableOpacity
+              key={f}
+              style={[styles.chip, freq === f && styles.chipActive]}
+              onPress={() => setFreq(f)}
+            >
+              <Text style={[styles.chipText, freq === f && styles.chipTextActive]}>{f}</Text>
             </TouchableOpacity>
           ))}
         </View>
-      )}
+      </View>
 
-      <TextInput placeholder="Next Paycheck Date" style={common.input} value={nextDate} onChangeText={setNextDate} />
-      <TextInput placeholder="Usual Deposit Amount (Optional)" style={common.input} value={amt} onChangeText={setAmt} />
-      <PrimaryButton title="Save Schedule" onPress={()=>navigation.goBack()} style={styles.button} />
+      <View style={styles.formCard}>
+        <Text style={styles.fieldLabel}>Next Paycheck Date</Text>
+        <Text style={styles.fieldHint}>Enter the date of your next expected paycheck.</Text>
+        <TextInput
+          placeholder="YYYY-MM-DD"
+          placeholderTextColor={COLORS.border}
+          style={styles.input}
+          value={nextDate}
+          onChangeText={setNextDate}
+        />
+      </View>
+
+      <View style={styles.formCard}>
+        <Text style={styles.fieldLabel}>Usual Deposit Amount</Text>
+        <Text style={styles.fieldHint}>Optional — helps estimate your savings capacity.</Text>
+        <View style={styles.amountRow}>
+          <Text style={styles.amountPrefix}>$</Text>
+          <TextInput
+            placeholder="0.00"
+            placeholderTextColor={COLORS.border}
+            keyboardType="decimal-pad"
+            style={styles.amountInput}
+            value={amt}
+            onChangeText={setAmt}
+          />
+        </View>
+      </View>
+
+      <PrimaryButton title="Save Schedule" onPress={() => navigation.goBack()} style={{marginTop:SPACING.xs}} />
+      <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
+        <Text style={styles.cancelText}>Cancel</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  form:{padding:SPACING.md},
-  optionsWrap:{marginBottom:SPACING.md},
-  optionBtn:{borderWidth:1,borderColor:COLORS.border,padding:SPACING.sm,borderRadius:8,marginBottom:SPACING.xs},
-  optionSelected:{borderColor:COLORS.primary,backgroundColor:COLORS.subtleBg},
-  optionSelectedText:{color:COLORS.primary,fontWeight:'700'},
-  button:{marginTop:SPACING.xs}
+  container:{padding:SPACING.md, paddingBottom:60},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text,marginBottom:4},
+  screenSub:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary,marginBottom:SPACING.md},
+
+  formCard:{
+    backgroundColor:COLORS.white,borderRadius:16,padding:SPACING.md,
+    borderWidth:1,borderColor:COLORS.border,marginBottom:SPACING.md,
+    shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.05,shadowRadius:6,elevation:2,
+  },
+  fieldLabel:{fontSize:13,fontWeight:'700',fontFamily:'Inter',color:COLORS.text,marginBottom:4},
+  fieldHint:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginBottom:SPACING.sm},
+
+  input:{
+    borderWidth:1,borderColor:COLORS.border,borderRadius:10,
+    padding:SPACING.sm,fontFamily:'Inter',fontSize:15,color:COLORS.text,
+    backgroundColor:COLORS.background,outlineStyle:'none',
+  },
+  amountRow:{
+    flexDirection:'row',alignItems:'center',
+    borderWidth:1,borderColor:COLORS.border,borderRadius:10,
+    paddingHorizontal:SPACING.sm,backgroundColor:COLORS.background,
+  },
+  amountPrefix:{fontSize:20,fontWeight:'700',color:COLORS.primary,marginRight:6},
+  amountInput:{flex:1,fontSize:20,fontFamily:'Inter',color:COLORS.text,paddingVertical:10,outlineStyle:'none'},
+
+  chipRow:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:SPACING.xs},
+  chip:{paddingHorizontal:14,paddingVertical:8,borderRadius:20,borderWidth:1,borderColor:COLORS.border,backgroundColor:COLORS.background},
+  chipActive:{borderColor:COLORS.primary,backgroundColor:COLORS.primary},
+  chipText:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary},
+  chipTextActive:{fontSize:14,fontFamily:'Inter',fontWeight:'700',color:COLORS.white},
+
+  cancelBtn:{alignItems:'center',paddingVertical:SPACING.md},
+  cancelText:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary},
 });
