@@ -1,8 +1,9 @@
 import 'react-native-gesture-handler';
-import React, {useState, useMemo} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import WelcomeScreen from './screens/WelcomeScreen';
 import SignupScreen from './screens/SignupScreen';
 import BankConnectScreen from './screens/BankConnectScreen';
@@ -22,24 +23,17 @@ import SecurityScreen from './screens/SecurityScreen';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import BrandLogo from './components/BrandLogo';
 import {BRANDING} from './assets/branding';
+import {ThemeProvider, buildNavigationTheme} from './theme/ThemeContext';
 
 const Stack = createStackNavigator();
 const Tabs = createBottomTabNavigator();
+const APP_STATE_KEY = 'righthand_app_state_v1';
 
 export default function App(){
-  const [bills, setBills] = useState([
-    {id:1,name:'Light Bill',amount:150,due:15,frequency:'Monthly',autoPay:true},
-    {id:2,name:'Phone Bill',amount:90,due:2,frequency:'Monthly',autoPay:true},
-    {id:3,name:'Rent',amount:1250,due:1,frequency:'Monthly',autoPay:true}
-  ]);
+  const [bills, setBills] = useState([]);
 
   // Transaction history — this is the source of truth for how much has been saved per bill
-  const [transactions, setTransactions] = useState([
-    {id:1, billId:1, amount:38,  date:'2026-03-01', note:'Auto savings transfer'},
-    {id:2, billId:2, amount:22,  date:'2026-03-01', note:'Auto savings transfer'},
-    {id:3, billId:3, amount:150, date:'2026-02-15', note:'Auto savings transfer'},
-    {id:4, billId:3, amount:100, date:'2026-03-01', note:'Auto savings transfer'},
-  ]);
+  const [transactions, setTransactions] = useState([]);
 
   const [autoSave, setAutoSave] = useState({
     enabled: false,
@@ -48,6 +42,49 @@ export default function App(){
     frequency: 'Bi-weekly',
     nextPayDate: '',
   });
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [themeMode, setThemeMode] = useState('light');
+
+  useEffect(() => {
+    async function hydrateState() {
+      try {
+        const raw = await AsyncStorage.getItem(APP_STATE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.bills)) setBills(parsed.bills);
+          if (Array.isArray(parsed.transactions)) setTransactions(parsed.transactions);
+          if (parsed.autoSave && typeof parsed.autoSave === 'object') {
+            setAutoSave((prev) => ({...prev, ...parsed.autoSave}));
+          }
+          if (parsed.themeMode === 'dark' || parsed.themeMode === 'light') {
+            setThemeMode(parsed.themeMode);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to hydrate app state', err);
+      } finally {
+        setIsHydrated(true);
+      }
+    }
+
+    hydrateState();
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    AsyncStorage.setItem(
+      APP_STATE_KEY,
+      JSON.stringify({bills, transactions, autoSave, themeMode}),
+    ).catch((err) => {
+      console.warn('Failed to persist app state', err);
+    });
+  }, [isHydrated, bills, transactions, autoSave, themeMode]);
+
+  const navTheme = useMemo(() => buildNavigationTheme(themeMode), [themeMode]);
+  const isDark = themeMode === 'dark';
+  const shellBg = isDark ? '#0F1412' : '#F5EEE3';
+
   function updateAutoSave(config){ setAutoSave(config); }
 
   function addTransaction(tx){
@@ -81,7 +118,7 @@ export default function App(){
     setBills(prev => prev.map(bill => bill.id === id ? {...bill, autoPay: !bill.autoPay} : bill));
   }
 
-  const tabIcons = {Home:'🏠', Bills:'📋', Calendar:'📅', Settings:'⚙️'};
+  const tabIcons = {Home:'🏠', Bills:'📋', Calendar:'📅', Bank:'🏦', Settings:'⚙️'};
 
   function MainTabs(){
     return (
@@ -97,30 +134,36 @@ export default function App(){
             );
           },
           tabBarLabel: route.name,
-          tabBarActiveTintColor: '#0B4226',
-          tabBarInactiveTintColor: '#36454F',
+          tabBarActiveTintColor: isDark ? '#6FD09A' : '#0B4226',
+          tabBarInactiveTintColor: isDark ? '#A6B8AE' : '#36454F',
           tabBarLabelStyle: {fontSize:11, fontFamily:'Inter', fontWeight:'600', marginBottom:2},
           tabBarStyle: {
-            backgroundColor:'#F5EEE3',
+            backgroundColor: shellBg,
             borderTopWidth:1,
-            borderTopColor:'#9BB38C',
+            borderTopColor: isDark ? '#2A3A33' : '#9BB38C',
             paddingTop:6,
             height:62,
           },
         })}
       >
-        <Tabs.Screen name="Home" children={()=>(<DashboardScreen bills={enrichedBills} autoSave={autoSave} />)} />
+        <Tabs.Screen name="Home">
+          {props => <DashboardScreen {...props} bills={enrichedBills} autoSave={autoSave} />}
+        </Tabs.Screen>
         <Tabs.Screen name="Bills">{props => <AutoPayScreen {...props} bills={enrichedBills} onToggleAutoPay={toggleBillAutoPay} />}</Tabs.Screen>
         <Tabs.Screen name="Calendar">{props => <CalendarScreen {...props} bills={enrichedBills} />}</Tabs.Screen>
-        <Tabs.Screen name="Settings" component={SettingsScreen} />
+        <Tabs.Screen name="Bank" component={BankConnectScreen} />
+        <Tabs.Screen name="Settings">
+          {props => <SettingsScreen {...props} themeMode={themeMode} onThemeModeChange={setThemeMode} />}
+        </Tabs.Screen>
       </Tabs.Navigator>
     );
   }
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={{flex:1}}>
-        <NavigationContainer>
+    <ThemeProvider mode={themeMode} setMode={setThemeMode}>
+      <SafeAreaProvider>
+      <SafeAreaView style={{flex:1, backgroundColor: shellBg}}>
+        <NavigationContainer theme={navTheme}>
           <Stack.Navigator
             screenOptions={{
               headerTitle: () => (
@@ -131,6 +174,8 @@ export default function App(){
                   imageUri={BRANDING.logoUri}
                 />
               ),
+              headerStyle: {backgroundColor: shellBg},
+              headerTintColor: isDark ? '#E8F3ED' : '#0B4226',
               headerTitleAlign: 'center',
             }}
           >
@@ -150,8 +195,8 @@ export default function App(){
                   onSave={(b)=>{
                     onSaveFunc(b);
                     if (bill) {
-                      // after editing, go back to details view
-                      props.navigation.navigate('BillDetails', {bill: b});
+                      // After editing, reopen details by id so screen renders canonical state.
+                      props.navigation.navigate('BillDetails', {billId: b.id});
                     } else {
                       props.navigation.navigate('Main');
                     }
@@ -163,12 +208,16 @@ export default function App(){
 
           <Stack.Screen name="BillDetails" options={{title:'Bill Details'}}>
             {props => {
+              const billId = props.route.params?.billId;
               const rawBill = props.route.params?.bill;
-              const enriched = rawBill ? {...rawBill, saved: savedByBill[rawBill.id] || 0} : rawBill;
+              const targetBill = billId
+                ? enrichedBills.find((bill) => bill.id === billId)
+                : (rawBill ? enrichedBills.find((bill) => bill.id === rawBill.id) || rawBill : null);
+              const enriched = targetBill ? {...targetBill, saved: savedByBill[targetBill.id] || 0} : targetBill;
               const enrichedProps = {...props, route: {...props.route, params: {...props.route.params, bill: enriched}}};
               return <BillDetailsScreen
                 {...enrichedProps}
-                transactions={transactions.filter(tx => rawBill && tx.billId === rawBill.id)}
+                transactions={transactions.filter(tx => enriched && tx.billId === enriched.id)}
                 onAddTransaction={addTransaction}
                 onDelete={(id)=>{deleteBill(id); props.navigation.navigate('Main');}}
                 onSave={updateBill}
@@ -193,5 +242,6 @@ export default function App(){
         </NavigationContainer>
       </SafeAreaView>
     </SafeAreaProvider>
+    </ThemeProvider>
   );
 }

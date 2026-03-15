@@ -1,8 +1,11 @@
 import React, {useState} from 'react';
 import {ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Switch} from 'react-native';
-import common, {SPACING, COLORS} from '../styles/common';
+import common, {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 
 export default function SecurityScreen({navigation}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
   const [currentPw,  setCurrentPw]  = useState('');
   const [newPw,      setNewPw]      = useState('');
   const [confirmPw,  setConfirmPw]  = useState('');
@@ -30,7 +33,7 @@ export default function SecurityScreen({navigation}){
     : /[A-Z]/.test(newPw) && /[0-9]/.test(newPw) ? 'strong'
     : 'fair';
 
-  const strengthColor = {weak:'#C62828', fair:'#F9A825', strong:COLORS.successText}[pwStrength] || COLORS.border;
+  const strengthColor = {weak:'#C62828', fair:'#F9A825', strong:colors.successText}[pwStrength] || colors.border;
   const strengthLabel = {weak:'Weak', fair:'Fair', strong:'Strong'}[pwStrength] || '';
 
   return (
@@ -60,7 +63,7 @@ export default function SecurityScreen({navigation}){
             onChangeText={setCurrentPw}
             secureTextEntry={!showPw}
             placeholder="••••••••"
-            placeholderTextColor={COLORS.border}
+            placeholderTextColor={colors.border}
             autoCapitalize="none"
           />
           <TouchableOpacity onPress={() => setShowPw(p => !p)} style={styles.showBtn}>
@@ -76,7 +79,7 @@ export default function SecurityScreen({navigation}){
             onChangeText={setNewPw}
             secureTextEntry={!showPw}
             placeholder="Min. 8 characters"
-            placeholderTextColor={COLORS.border}
+            placeholderTextColor={colors.border}
             autoCapitalize="none"
           />
         </View>
@@ -101,7 +104,7 @@ export default function SecurityScreen({navigation}){
             onChangeText={setConfirmPw}
             secureTextEntry={!showPw}
             placeholder="Repeat new password"
-            placeholderTextColor={COLORS.border}
+            placeholderTextColor={colors.border}
             autoCapitalize="none"
           />
         </View>
@@ -127,12 +130,12 @@ export default function SecurityScreen({navigation}){
           <Switch
             value={twoFA}
             onValueChange={setTwoFA}
-            trackColor={{false:COLORS.border, true:COLORS.primary}}
-            thumbColor={COLORS.white}
+            trackColor={{false:colors.border, true:colors.primary}}
+            thumbColor={colors.white}
           />
         </View>
 
-        <View style={[styles.toggleRow, {borderTopWidth:1, borderTopColor:COLORS.border}]}>
+        <View style={[styles.toggleRow, {borderTopWidth:1, borderTopColor:colors.border}]}>
           <View style={styles.toggleInfo}>
             <Text style={styles.toggleLabel}>Biometric Login</Text>
             <Text style={styles.toggleSub}>Use Face ID or fingerprint to sign in quickly.</Text>
@@ -140,8 +143,8 @@ export default function SecurityScreen({navigation}){
           <Switch
             value={biometric}
             onValueChange={setBiometric}
-            trackColor={{false:COLORS.border, true:COLORS.primary}}
-            thumbColor={COLORS.white}
+            trackColor={{false:colors.border, true:colors.primary}}
+            thumbColor={colors.white}
           />
         </View>
       </View>
@@ -164,58 +167,58 @@ export default function SecurityScreen({navigation}){
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:60},
-  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text,marginBottom:SPACING.md},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:SPACING.md},
 
   card:{
-    backgroundColor:COLORS.white,borderRadius:16,padding:SPACING.md,
-    borderWidth:1,borderColor:COLORS.border,marginBottom:SPACING.md,
+    backgroundColor:colors.white,borderRadius:16,padding:SPACING.md,
+    borderWidth:1,borderColor:colors.border,marginBottom:SPACING.md,
     shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.05,shadowRadius:6,elevation:2,
   },
   cardTitle:{
     fontSize:11,fontWeight:'700',fontFamily:'Inter',
-    color:COLORS.textSecondary,letterSpacing:1,textTransform:'uppercase',marginBottom:SPACING.md,
+    color:colors.textSecondary,letterSpacing:1,textTransform:'uppercase',marginBottom:SPACING.md,
   },
 
-  successBanner:{backgroundColor:COLORS.successBg,borderRadius:10,padding:SPACING.sm,marginBottom:SPACING.sm,borderWidth:1,borderColor:COLORS.successBorder},
-  successText:{fontSize:13,fontFamily:'Inter',color:COLORS.successText,fontWeight:'600'},
-  errorBanner:{backgroundColor:COLORS.dangerBg,borderRadius:10,padding:SPACING.sm,marginBottom:SPACING.sm,borderWidth:1,borderColor:COLORS.dangerBorder},
-  errorText:{fontSize:13,fontFamily:'Inter',color:COLORS.dangerText},
+  successBanner:{backgroundColor:colors.successBg,borderRadius:10,padding:SPACING.sm,marginBottom:SPACING.sm,borderWidth:1,borderColor:colors.successBorder},
+  successText:{fontSize:13,fontFamily:'Inter',color:colors.successText,fontWeight:'600'},
+  errorBanner:{backgroundColor:colors.dangerBg,borderRadius:10,padding:SPACING.sm,marginBottom:SPACING.sm,borderWidth:1,borderColor:colors.dangerBorder},
+  errorText:{fontSize:13,fontFamily:'Inter',color:colors.dangerText},
 
-  fieldLabel:{fontSize:11,fontWeight:'700',fontFamily:'Inter',color:COLORS.textSecondary,marginBottom:4,letterSpacing:0.5},
+  fieldLabel:{fontSize:11,fontWeight:'700',fontFamily:'Inter',color:colors.textSecondary,marginBottom:4,letterSpacing:0.5},
   pwRow:{
     flexDirection:'row',alignItems:'center',
-    borderWidth:1,borderColor:COLORS.border,borderRadius:10,
-    backgroundColor:COLORS.background,paddingHorizontal:SPACING.sm,
+    borderWidth:1,borderColor:colors.border,borderRadius:10,
+    backgroundColor:colors.background,paddingHorizontal:SPACING.sm,
   },
-  pwInput:{flex:1,fontSize:15,fontFamily:'Inter',color:COLORS.text,paddingVertical:10,outlineStyle:'none'},
+  pwInput:{flex:1,fontSize:15,fontFamily:'Inter',color:colors.text,paddingVertical:10,outlineStyle:'none'},
   showBtn:{paddingLeft:SPACING.sm},
-  showBtnText:{fontSize:13,fontWeight:'600',fontFamily:'Inter',color:COLORS.primary},
+  showBtnText:{fontSize:13,fontWeight:'600',fontFamily:'Inter',color:colors.primary},
 
   strengthRow:{flexDirection:'row',alignItems:'center',marginTop:6,gap:8},
-  strengthTrack:{flex:1,height:4,backgroundColor:COLORS.border,borderRadius:4,overflow:'hidden'},
+  strengthTrack:{flex:1,height:4,backgroundColor:colors.border,borderRadius:4,overflow:'hidden'},
   strengthFill:{height:4,borderRadius:4},
   strengthLabel:{fontSize:11,fontWeight:'700',fontFamily:'Inter'},
 
-  requirements:{fontSize:11,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:6,lineHeight:16},
+  requirements:{fontSize:11,fontFamily:'Inter',color:colors.textSecondary,marginTop:6,lineHeight:16},
 
   saveBtn:{
-    backgroundColor:COLORS.primary,borderRadius:12,
+    backgroundColor:colors.primary,borderRadius:12,
     padding:SPACING.md,alignItems:'center',marginTop:SPACING.md,
   },
-  saveBtnText:{fontSize:15,fontWeight:'700',fontFamily:'Inter',color:'#fff'},
+  saveBtnText:{fontSize:15,fontWeight:'700',fontFamily:'Inter',color:colors.onPrimary},
 
   toggleRow:{paddingVertical:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   toggleInfo:{flex:1,paddingRight:SPACING.md},
-  toggleLabel:{fontSize:15,fontWeight:'500',fontFamily:'Inter',color:COLORS.text},
-  toggleSub:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+  toggleLabel:{fontSize:15,fontWeight:'500',fontFamily:'Inter',color:colors.text},
+  toggleSub:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
 
   sessionRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingVertical:SPACING.sm},
-  sessionDevice:{fontSize:14,fontWeight:'500',fontFamily:'Inter',color:COLORS.text},
-  sessionMeta:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
-  currentPill:{backgroundColor:COLORS.successBg,borderRadius:20,paddingHorizontal:10,paddingVertical:3,borderWidth:1,borderColor:COLORS.successBorder},
-  currentPillText:{fontSize:11,fontWeight:'700',fontFamily:'Inter',color:COLORS.successText},
-  signOutAll:{marginTop:SPACING.sm,borderTopWidth:1,borderTopColor:COLORS.border,paddingTop:SPACING.sm},
-  signOutAllText:{fontSize:13,fontWeight:'600',fontFamily:'Inter',color:COLORS.dangerText},
+  sessionDevice:{fontSize:14,fontWeight:'500',fontFamily:'Inter',color:colors.text},
+  sessionMeta:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
+  currentPill:{backgroundColor:colors.successBg,borderRadius:20,paddingHorizontal:10,paddingVertical:3,borderWidth:1,borderColor:colors.successBorder},
+  currentPillText:{fontSize:11,fontWeight:'700',fontFamily:'Inter',color:colors.successText},
+  signOutAll:{marginTop:SPACING.sm,borderTopWidth:1,borderTopColor:colors.border,paddingTop:SPACING.sm},
+  signOutAllText:{fontSize:13,fontWeight:'600',fontFamily:'Inter',color:colors.dangerText},
 });

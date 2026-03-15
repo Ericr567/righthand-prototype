@@ -1,9 +1,12 @@
 import React, {useState} from 'react';
 import {ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet} from 'react-native';
-import common, {SPACING, COLORS} from '../styles/common';
+import common, {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 import PrimaryButton from '../components/PrimaryButton';
 
 export default function ProfileScreen({navigation}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
   const [firstName, setFirstName] = useState('');
   const [lastName,  setLastName]  = useState('');
   const [email,     setEmail]     = useState('');
@@ -44,14 +47,14 @@ export default function ProfileScreen({navigation}){
           <View style={styles.fieldHalf}>
             <Text style={styles.fieldLabel}>First Name</Text>
             {editing
-              ? <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholder="First" placeholderTextColor={COLORS.border} />
+              ? <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholder="First" placeholderTextColor={colors.border} />
               : <Text style={styles.fieldValue}>{firstName || '—'}</Text>
             }
           </View>
           <View style={[styles.fieldHalf, {marginLeft:SPACING.sm}]}>
             <Text style={styles.fieldLabel}>Last Name</Text>
             {editing
-              ? <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder="Last" placeholderTextColor={COLORS.border} />
+              ? <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder="Last" placeholderTextColor={colors.border} />
               : <Text style={styles.fieldValue}>{lastName || '—'}</Text>
             }
           </View>
@@ -59,13 +62,13 @@ export default function ProfileScreen({navigation}){
 
         <Text style={[styles.fieldLabel, {marginTop:SPACING.sm}]}>Email Address</Text>
         {editing
-          ? <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="your@email.com" placeholderTextColor={COLORS.border} keyboardType="email-address" autoCapitalize="none" />
+          ? <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="your@email.com" placeholderTextColor={colors.border} keyboardType="email-address" autoCapitalize="none" />
           : <Text style={styles.fieldValue}>{email || '—'}</Text>
         }
 
         <Text style={[styles.fieldLabel, {marginTop:SPACING.sm}]}>Phone Number</Text>
         {editing
-          ? <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="(555) 000-0000" placeholderTextColor={COLORS.border} keyboardType="phone-pad" />
+          ? <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="(555) 000-0000" placeholderTextColor={colors.border} keyboardType="phone-pad" />
           : <Text style={styles.fieldValue}>{phone || '—'}</Text>
         }
 
@@ -106,70 +109,70 @@ export default function ProfileScreen({navigation}){
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:60},
-  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text,marginBottom:SPACING.md},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:SPACING.md},
 
   avatarWrap:{alignItems:'center',marginBottom:SPACING.lg},
   avatar:{
     width:80,height:80,borderRadius:40,
-    backgroundColor:COLORS.primary,
+    backgroundColor:colors.primary,
     alignItems:'center',justifyContent:'center',
     marginBottom:SPACING.sm,
     shadowColor:'#000',shadowOffset:{width:0,height:4},shadowOpacity:0.15,shadowRadius:8,elevation:4,
   },
-  avatarInitials:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:'#fff'},
-  avatarName:{fontSize:18,fontWeight:'700',fontFamily:'Inter',color:COLORS.text},
-  avatarEmail:{fontSize:13,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+  avatarInitials:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.onPrimary},
+  avatarName:{fontSize:18,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  avatarEmail:{fontSize:13,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
 
   formCard:{
-    backgroundColor:COLORS.white,borderRadius:16,padding:SPACING.md,
-    borderWidth:1,borderColor:COLORS.border,marginBottom:SPACING.md,
+    backgroundColor:colors.white,borderRadius:16,padding:SPACING.md,
+    borderWidth:1,borderColor:colors.border,marginBottom:SPACING.md,
     shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.05,shadowRadius:6,elevation:2,
   },
   cardHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:SPACING.md},
   cardTitle:{
     fontSize:11,fontWeight:'700',fontFamily:'Inter',
-    color:COLORS.textSecondary,letterSpacing:1,textTransform:'uppercase',
+    color:colors.textSecondary,letterSpacing:1,textTransform:'uppercase',
   },
-  editToggle:{fontSize:14,fontWeight:'600',fontFamily:'Inter',color:COLORS.primary},
+  editToggle:{fontSize:14,fontWeight:'600',fontFamily:'Inter',color:colors.primary},
 
   fieldRow:{flexDirection:'row',marginBottom:SPACING.xs},
   fieldHalf:{flex:1},
-  fieldLabel:{fontSize:11,fontWeight:'700',fontFamily:'Inter',color:COLORS.textSecondary,marginBottom:4,letterSpacing:0.5},
-  fieldValue:{fontSize:15,fontFamily:'Inter',color:COLORS.text,paddingVertical:8},
+  fieldLabel:{fontSize:11,fontWeight:'700',fontFamily:'Inter',color:colors.textSecondary,marginBottom:4,letterSpacing:0.5},
+  fieldValue:{fontSize:15,fontFamily:'Inter',color:colors.text,paddingVertical:8},
   input:{
-    borderWidth:1,borderColor:COLORS.border,borderRadius:10,
-    padding:SPACING.sm,fontFamily:'Inter',fontSize:15,color:COLORS.text,
-    backgroundColor:COLORS.background,outlineStyle:'none',
+    borderWidth:1,borderColor:colors.border,borderRadius:10,
+    padding:SPACING.sm,fontFamily:'Inter',fontSize:15,color:colors.text,
+    backgroundColor:colors.background,outlineStyle:'none',
   },
   saveBtn:{
-    backgroundColor:COLORS.primary,borderRadius:12,
+    backgroundColor:colors.primary,borderRadius:12,
     padding:SPACING.md,alignItems:'center',marginTop:SPACING.md,
   },
-  saveBtnText:{fontSize:15,fontWeight:'700',fontFamily:'Inter',color:'#fff'},
+  saveBtnText:{fontSize:15,fontWeight:'700',fontFamily:'Inter',color:colors.onPrimary},
 
   infoRow:{
     flexDirection:'row',justifyContent:'space-between',alignItems:'center',
-    paddingVertical:12,borderBottomWidth:1,borderBottomColor:COLORS.border,
+    paddingVertical:12,borderBottomWidth:1,borderBottomColor:colors.border,
   },
-  infoLabel:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary},
-  infoValue:{fontSize:14,fontWeight:'500',fontFamily:'Inter',color:COLORS.text},
-  activePill:{backgroundColor:COLORS.successBg,borderRadius:20,paddingHorizontal:10,paddingVertical:3,borderWidth:1,borderColor:COLORS.successBorder},
-  activePillText:{fontSize:12,fontWeight:'700',fontFamily:'Inter',color:COLORS.successText},
+  infoLabel:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary},
+  infoValue:{fontSize:14,fontWeight:'500',fontFamily:'Inter',color:colors.text},
+  activePill:{backgroundColor:colors.successBg,borderRadius:20,paddingHorizontal:10,paddingVertical:3,borderWidth:1,borderColor:colors.successBorder},
+  activePillText:{fontSize:12,fontWeight:'700',fontFamily:'Inter',color:colors.successText},
 
   dangerCard:{
-    backgroundColor:COLORS.dangerBg,borderRadius:16,padding:SPACING.md,
-    borderWidth:1,borderColor:COLORS.dangerBorder,marginBottom:SPACING.md,
+    backgroundColor:colors.dangerBg,borderRadius:16,padding:SPACING.md,
+    borderWidth:1,borderColor:colors.dangerBorder,marginBottom:SPACING.md,
   },
   dangerTitle:{
     fontSize:11,fontWeight:'700',fontFamily:'Inter',
-    color:COLORS.dangerText,letterSpacing:1,textTransform:'uppercase',marginBottom:SPACING.sm,
+    color:colors.dangerText,letterSpacing:1,textTransform:'uppercase',marginBottom:SPACING.sm,
   },
   dangerBtn:{
-    borderWidth:1,borderColor:COLORS.dangerBorder,borderRadius:10,
+    borderWidth:1,borderColor:colors.dangerBorder,borderRadius:10,
     padding:SPACING.sm,alignItems:'center',marginBottom:SPACING.xs,
   },
-  dangerBtnText:{fontSize:14,fontWeight:'700',fontFamily:'Inter',color:COLORS.dangerText},
-  dangerHint:{fontSize:11,fontFamily:'Inter',color:COLORS.dangerText,opacity:0.7,lineHeight:16},
+  dangerBtnText:{fontSize:14,fontWeight:'700',fontFamily:'Inter',color:colors.dangerText},
+  dangerHint:{fontSize:11,fontFamily:'Inter',color:colors.dangerText,opacity:0.7,lineHeight:16},
 });

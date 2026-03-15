@@ -1,138 +1,278 @@
-import React, {useMemo, useState} from 'react';
-import {View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet, TextInput, Platform, ActivityIndicator, ScrollView, Linking} from 'react-native';
 
-import common, {SPACING, COLORS} from '../styles/common';
+import {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 
-const BANKS = [
-  {name:'Chase',         logo:'🏛️',  color:'#003087', accent:'#B9975B'},
-  {name:'Bank of America',logo:'🏦', color:'#E31837', accent:'#012169'},
-  {name:'Wells Fargo',   logo:'🐎',  color:'#D71E28', accent:'#FFCD41'},
-  {name:'Capital One',   logo:'💳',  color:'#CC0000', accent:'#004977'},
-  {name:'Citi',          logo:'🔵',  color:'#003B8E', accent:'#E31837'},
-  {name:'US Bank',       logo:'🏦',  color:'#002776', accent:'#CC0000'},
-  {name:'TD Bank',       logo:'🟢',  color:'#34A853', accent:'#1A1A1A'},
-];
-
-export default function BankConnectScreen({navigation}){
-  const [query,       setQuery]       = useState('');
-  const [selected,    setSelected]    = useState(null);
+export default function BankConnectScreen({navigation}) {
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
+  const [query, setQuery] = useState('');
+  const [institutions, setInstitutions] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [connecting,  setConnecting]  = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [linkReady, setLinkReady] = useState(false);
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
 
-  const filteredBanks = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return BANKS;
-    return BANKS.filter((b) => b.name.toLowerCase().includes(q));
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    let cancelled = false;
+    ensurePlaidScript()
+      .then(() => {
+        if (!cancelled) setLinkReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError('Unable to load Plaid Link. Refresh and try again.');
+          setLinkReady(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const trimmed = query.trim();
+
+    setSearching(true);
+    setError('');
+
+    const timer = setTimeout(async () => {
+      try {
+        const list = await searchInstitutions(trimmed);
+        if (!cancelled) {
+          setInstitutions(list);
+          if (trimmed || list.length) setDropdownOpen(true);
+        }
+      } catch (searchError) {
+        if (!cancelled) {
+          setInstitutions([]);
+          setError(searchError.message || 'Could not search institutions.');
+        }
+      } finally {
+        if (!cancelled) {
+          setSearching(false);
+        }
+      }
+    }, 280);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [query]);
 
-  function handleContinue() {
+  async function handleContinue() {
+    setError('');
+    if (Platform.OS !== 'web') {
+      setError('Plaid Link is currently enabled for web in this prototype.');
+      return;
+    }
+    if (!selected) {
+      setError('Select a bank from the dropdown first.');
+      return;
+    }
+
     setConnecting(true);
-    setTimeout(() => { setConnecting(false); setShowSuccess(true); }, 1400);
-    setTimeout(() => navigation.replace('Main'), 2200);
+    setStatus('Creating secure link...');
+
+    try {
+      await ensurePlaidScript();
+      const token = await createLinkToken();
+      const plaid = global?.window?.Plaid;
+      if (!plaid || typeof plaid.create !== 'function') {
+        throw new Error('Plaid Link failed to initialize.');
+      }
+
+      const handler = plaid.create({
+        token,
+        onSuccess: async (publicToken, metadata) => {
+          try {
+            setStatus('Finalizing bank connection...');
+            await exchangePublicToken(publicToken, metadata?.institution?.name || selected.name);
+            setConnecting(false);
+            setShowSuccess(true);
+            setStatus('');
+            setTimeout(() => navigation.replace('Main'), 1800);
+          } catch (exchangeError) {
+            setConnecting(false);
+            setStatus('');
+            setError(exchangeError.message || 'Could not finish connection. Try again.');
+          }
+        },
+        onExit: (exitError) => {
+          setConnecting(false);
+          setStatus('');
+          if (exitError) {
+            setError('Plaid was closed before completion.');
+          }
+        },
+      });
+
+      setStatus('Opening Plaid...');
+      handler.open();
+    } catch (linkError) {
+      setConnecting(false);
+      setStatus('');
+      setError(linkError.message || 'Unable to start Plaid Link.');
+    }
+  }
+
+  async function handleVisitWebsite() {
+    setError('');
+    const url = normalizeUrl(selected?.login_url || selected?.url);
+    if (!url) {
+      setError('This institution did not provide a login URL.');
+      return;
+    }
+
+    try {
+      if (Platform.OS === 'web') {
+        const win = global?.window;
+        if (!win) throw new Error('Window is unavailable.');
+        win.open(url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) throw new Error('Unable to open URL.');
+      await Linking.openURL(url);
+    } catch (visitError) {
+      setError(visitError.message || 'Could not open the bank website.');
+    }
   }
 
   return (
     <View style={styles.root}>
-      {/* Hero */}
       <View style={styles.hero}>
         <View style={styles.heroIconWrap}>
           <Text style={styles.heroIcon}>🔐</Text>
         </View>
         <Text style={styles.heroTitle}>Connect Your Bank</Text>
-        <Text style={styles.heroSub}>256-bit encryption · read-only access · powered by Plaid</Text>
+        <Text style={styles.heroSub}>256-bit encryption | read-only access | powered by Plaid</Text>
+      </View>
 
-        <View style={styles.trustRow}>
-          {['🔒 Secure','👁️ Read-only','⚡ Instant'].map((t) => (
-            <View key={t} style={styles.trustPill}>
-              <Text style={styles.trustPillText}>{t}</Text>
-            </View>
-          ))}
+      <View style={styles.contentCard}>
+        <Text style={styles.inputLabel}>Find your bank</Text>
+        <View style={styles.searchRow}>
+          <Text style={styles.searchIcon}>🔎</Text>
+          <TextInput
+            placeholder="Type your bank name"
+            placeholderTextColor={colors.textSecondary}
+            value={query}
+            onChangeText={(val) => {
+              setQuery(val);
+              setSelected(null);
+            }}
+            style={styles.searchInput}
+            clearButtonMode="while-editing"
+            accessibilityLabel="Search bank"
+          />
+          {searching && <ActivityIndicator size="small" color={colors.primary} />}
         </View>
-      </View>
 
-      {/* Search */}
-      <View style={styles.searchRow}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          placeholder="Search 10,000+ banks…"
-          placeholderTextColor={COLORS.textSecondary}
-          value={query}
-          onChangeText={setQuery}
-          style={styles.searchInput}
-          clearButtonMode="while-editing"
-        />
-      </View>
+        <Text style={styles.helperText}>
+          {query.trim().length === 0
+            ? 'Popular banks are listed below. Type to refine your search.'
+            : 'Select a bank from the dropdown list below.'}
+        </Text>
 
-      {/* Bank list */}
-      <ScrollView style={styles.listWrap} showsVerticalScrollIndicator={false}>
-        <Text style={styles.listLabel}>POPULAR BANKS</Text>
-        {filteredBanks.map((bank) => {
-          const isSelected = selected?.name === bank.name;
-          return (
-            <TouchableOpacity
-              key={bank.name}
-              style={[styles.bankCard, isSelected && styles.bankCardSelected]}
-              onPress={() => setSelected(bank)}
-              activeOpacity={0.75}
-            >
-              <View style={[styles.bankLogoWrap, {backgroundColor: bank.color + '18'}]}>
-                <Text style={styles.bankLogo}>{bank.logo}</Text>
-              </View>
-              <View style={styles.bankInfo}>
-                <Text style={[styles.bankName, isSelected && styles.bankNameSelected]}>{bank.name}</Text>
-                <Text style={styles.bankSub}>Personal &amp; Business</Text>
-              </View>
-              <View style={[styles.bankCheck, isSelected && styles.bankCheckActive]}>
-                {isSelected && <Text style={styles.bankCheckMark}>✓</Text>}
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+        <View style={styles.dropdownWrap}>
+          <TouchableOpacity
+            style={styles.dropdownTrigger}
+            onPress={() => setDropdownOpen((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel="Bank dropdown"
+          >
+            <Text style={[styles.dropdownText, !selected && styles.dropdownPlaceholder]}>
+              {selected ? selected.name : 'Choose bank'}
+            </Text>
+            <Text style={styles.dropdownArrow}>{dropdownOpen ? '▲' : '▼'}</Text>
+          </TouchableOpacity>
 
-        {filteredBanks.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🏦</Text>
-            <Text style={styles.emptyText}>No banks match "{query}"</Text>
-            <Text style={styles.emptyCaption}>Try a different spelling</Text>
+          {dropdownOpen && (
+            <View style={styles.dropdownMenu}>
+              <ScrollView nestedScrollEnabled style={styles.dropdownScroll}>
+                {institutions.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setSelected(item);
+                      setDropdownOpen(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{item.name}</Text>
+                    {!!(item.login_url || item.url) && (
+                      <Text style={styles.dropdownItemSub}>Login: {formatDomain(item.login_url || item.url)}</Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+                {institutions.length === 0 && (
+                  <View style={styles.dropdownEmpty}>
+                    <Text style={styles.dropdownEmptyText}>No institutions found</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.connectBtn,
+            (connecting || !selected || (Platform.OS === 'web' && !linkReady)) && styles.connectBtnDisabled,
+          ]}
+          onPress={handleContinue}
+          disabled={connecting || !selected || (Platform.OS === 'web' && !linkReady)}
+          accessibilityRole="button"
+          accessibilityLabel="Connect to Plaid"
+        >
+          <Text style={styles.connectBtnText}>
+            {connecting ? 'Connecting to Plaid...' : 'Connect to Plaid'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.websiteBtn, !selected && styles.connectBtnDisabled]}
+          onPress={handleVisitWebsite}
+          disabled={!selected}
+          accessibilityRole="button"
+          accessibilityLabel="Visit selected bank website"
+        >
+          <Text style={styles.websiteBtnText}>Open Bank Login Page</Text>
+        </TouchableOpacity>
+
+        {!!selected && <Text style={styles.selectedText}>Selected: {selected.name}</Text>}
+        {connecting && (
+          <View style={styles.statusRow}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={styles.statusText}>{status || 'Working...'}</Text>
           </View>
         )}
-      </ScrollView>
+        {!linkReady && Platform.OS === 'web' && !connecting && (
+          <Text style={styles.helperText}>Loading Plaid Link...</Text>
+        )}
+        {!!error && <Text style={styles.errorText}>{error}</Text>}
+      </View>
 
-      {/* CTA */}
-      {selected && !showSuccess && (
-        <View style={styles.ctaCard}>
-          <View style={styles.ctaRow}>
-            <Text style={styles.ctaSelected}>
-              <Text style={styles.ctaSelectedLabel}>Selected  </Text>
-              {selected.logo} {selected.name}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.connectBtn, connecting && styles.connectBtnLoading]}
-            onPress={handleContinue}
-            disabled={connecting}
-          >
-            <Text style={styles.connectBtnText}>
-              {connecting ? '🔄  Connecting…' : '🔒  Securely Connect'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Skip */}
       {!showSuccess && (
         <TouchableOpacity style={styles.skipWrap} onPress={() => navigation.replace('Main')}>
-          <Text style={styles.skipText}>Skip for now — connect later in Settings</Text>
+          <Text style={styles.skipText}>Skip for now and connect later</Text>
         </TouchableOpacity>
       )}
 
-      {/* Success overlay */}
       {showSuccess && (
         <View style={styles.successOverlay}>
           <View style={styles.successCard}>
             <Text style={styles.successIcon}>🎉</Text>
             <Text style={styles.successTitle}>Bank Connected!</Text>
-            <Text style={styles.successSub}>{selected?.name} is linked securely</Text>
+            <Text style={styles.successSub}>{selected?.name} is linked securely.</Text>
           </View>
         </View>
       )}
@@ -140,120 +280,217 @@ export default function BankConnectScreen({navigation}){
   );
 }
 
-const styles = StyleSheet.create({
-  root:{flex:1,backgroundColor:COLORS.background},
+const createStyles = (colors) => StyleSheet.create({
+  root: {flex: 1, backgroundColor: colors.background},
+  hero: {
+    backgroundColor: colors.primary,
+    paddingTop: SPACING.xl,
+    paddingBottom: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+    alignItems: 'center',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  heroIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.sm,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  heroIcon: {fontSize: 30},
+  heroTitle: {fontSize: 26, fontWeight: '800', fontFamily: 'Inter', color: colors.onPrimary, marginBottom: 4},
+  heroSub: {fontSize: 12, fontFamily: 'Inter', color: 'rgba(255,255,255,0.7)', textAlign: 'center'},
 
-  /* Hero */
-  hero:{
-    backgroundColor:COLORS.primary,
-    paddingTop:SPACING.xl,paddingBottom:SPACING.lg,paddingHorizontal:SPACING.lg,
-    alignItems:'center',
-    borderBottomLeftRadius:28,borderBottomRightRadius:28,
+  contentCard: {
+    margin: SPACING.md,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: SPACING.md,
   },
-  heroIconWrap:{
-    width:64,height:64,borderRadius:32,
-    backgroundColor:'rgba(255,255,255,0.15)',
-    alignItems:'center',justifyContent:'center',marginBottom:SPACING.sm,
-    borderWidth:2,borderColor:'rgba(255,255,255,0.25)',
+  inputLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    marginBottom: 8,
   },
-  heroIcon:{fontSize:30},
-  heroTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:'#fff',marginBottom:4},
-  heroSub:{fontSize:12,fontFamily:'Inter',color:'rgba(255,255,255,0.65)',textAlign:'center',marginBottom:SPACING.md},
-  trustRow:{flexDirection:'row',gap:8},
-  trustPill:{
-    backgroundColor:'rgba(255,255,255,0.12)',borderWidth:1,
-    borderColor:'rgba(255,255,255,0.2)',borderRadius:20,
-    paddingHorizontal:10,paddingVertical:4,
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: SPACING.sm,
+    backgroundColor: colors.background,
   },
-  trustPillText:{fontSize:11,fontWeight:'600',fontFamily:'Inter',color:'rgba(255,255,255,0.9)'},
+  searchIcon: {fontSize: 15, marginRight: 6},
+  searchInput: {flex: 1, fontSize: 15, fontFamily: 'Inter', color: colors.text, paddingVertical: 10, outlineStyle: 'none'},
+  helperText: {fontSize: 12, fontFamily: 'Inter', color: colors.textSecondary, marginTop: 8},
 
-  /* Search */
-  searchRow:{
-    flexDirection:'row',alignItems:'center',
-    marginHorizontal:SPACING.md,marginTop:SPACING.md,
-    backgroundColor:COLORS.white,borderRadius:14,
-    borderWidth:1,borderColor:COLORS.border,
-    paddingHorizontal:SPACING.sm,
-    shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.06,shadowRadius:6,elevation:2,
+  dropdownWrap: {marginTop: 12},
+  dropdownTrigger: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.background,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  searchIcon:{fontSize:16,marginRight:6},
-  searchInput:{flex:1,fontSize:15,fontFamily:'Inter',color:COLORS.text,paddingVertical:12,outlineStyle:'none'},
+  dropdownText: {fontSize: 15, fontFamily: 'Inter', color: colors.text},
+  dropdownPlaceholder: {color: colors.textSecondary},
+  dropdownArrow: {fontSize: 12, color: colors.textSecondary},
+  dropdownMenu: {
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.white,
+    maxHeight: 220,
+    overflow: 'hidden',
+  },
+  dropdownScroll: {maxHeight: 220},
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  dropdownItemText: {fontSize: 14, fontFamily: 'Inter', color: colors.text},
+  dropdownItemSub: {fontSize: 11, fontFamily: 'Inter', color: colors.textSecondary, marginTop: 2},
+  dropdownEmpty: {paddingVertical: 14, paddingHorizontal: SPACING.sm},
+  dropdownEmptyText: {fontSize: 13, fontFamily: 'Inter', color: colors.textSecondary},
 
-  /* List */
-  listWrap:{flex:1,marginTop:SPACING.md,paddingHorizontal:SPACING.md},
-  listLabel:{
-    fontSize:11,fontWeight:'700',fontFamily:'Inter',
-    color:COLORS.textSecondary,letterSpacing:1.2,textTransform:'uppercase',
-    marginBottom:SPACING.sm,
+  connectBtn: {
+    marginTop: 14,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
-  bankCard:{
-    flexDirection:'row',alignItems:'center',
-    backgroundColor:COLORS.white,borderRadius:16,padding:14,
-    marginBottom:10,borderWidth:1.5,borderColor:COLORS.border,
-    shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.04,shadowRadius:4,elevation:1,
+  connectBtnDisabled: {opacity: 0.6},
+  connectBtnText: {fontSize: 15, fontWeight: '800', fontFamily: 'Inter', color: colors.onPrimary},
+  websiteBtn: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: colors.background,
   },
-  bankCardSelected:{
-    borderColor:COLORS.primary,borderWidth:2,
-    backgroundColor:'#F0F8F3',
-    shadowColor:COLORS.primary,shadowOpacity:0.12,shadowRadius:8,elevation:3,
-  },
-  bankLogoWrap:{
-    width:48,height:48,borderRadius:14,
-    alignItems:'center',justifyContent:'center',marginRight:14,
-  },
-  bankLogo:{fontSize:24},
-  bankInfo:{flex:1},
-  bankName:{fontSize:15,fontWeight:'700',fontFamily:'Inter',color:COLORS.text},
-  bankNameSelected:{color:COLORS.primary},
-  bankSub:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:1},
-  bankCheck:{
-    width:24,height:24,borderRadius:12,
-    borderWidth:1.5,borderColor:COLORS.border,
-    alignItems:'center',justifyContent:'center',
-  },
-  bankCheckActive:{backgroundColor:COLORS.primary,borderColor:COLORS.primary},
-  bankCheckMark:{fontSize:13,fontWeight:'800',color:'#fff'},
+  websiteBtnText: {fontSize: 14, fontWeight: '700', fontFamily: 'Inter', color: colors.text},
+  selectedText: {fontSize: 12, fontFamily: 'Inter', color: colors.textSecondary, marginTop: 10},
 
-  /* Empty */
-  emptyState:{alignItems:'center',paddingVertical:SPACING.xl},
-  emptyIcon:{fontSize:40,marginBottom:SPACING.sm},
-  emptyText:{fontSize:16,fontWeight:'600',fontFamily:'Inter',color:COLORS.text},
-  emptyCaption:{fontSize:13,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:4},
+  statusRow: {flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10},
+  statusText: {fontSize: 12, fontFamily: 'Inter', color: colors.textSecondary},
+  errorText: {fontSize: 12, fontFamily: 'Inter', color: colors.dangerText, marginTop: 10},
 
-  /* CTA */
-  ctaCard:{
-    marginHorizontal:SPACING.md,marginBottom:SPACING.sm,
-    backgroundColor:COLORS.white,borderRadius:18,padding:SPACING.md,
-    borderWidth:1,borderColor:COLORS.border,
-    shadowColor:'#000',shadowOffset:{width:0,height:-2},shadowOpacity:0.06,shadowRadius:8,elevation:4,
-  },
-  ctaRow:{marginBottom:SPACING.sm},
-  ctaSelected:{fontSize:14,fontFamily:'Inter',color:COLORS.text,fontWeight:'600'},
-  ctaSelectedLabel:{color:COLORS.textSecondary,fontWeight:'400'},
-  connectBtn:{
-    backgroundColor:COLORS.primary,borderRadius:14,
-    paddingVertical:16,alignItems:'center',
-    shadowColor:COLORS.primary,shadowOffset:{width:0,height:4},shadowOpacity:0.3,shadowRadius:8,elevation:4,
-  },
-  connectBtnLoading:{backgroundColor:COLORS.textSecondary,shadowOpacity:0},
-  connectBtnText:{fontSize:16,fontWeight:'800',fontFamily:'Inter',color:'#fff',letterSpacing:0.3},
+  skipWrap: {alignItems: 'center', paddingVertical: 12, marginBottom: 4},
+  skipText: {fontSize: 12, fontFamily: 'Inter', color: colors.textSecondary, textDecorationLine: 'underline'},
 
-  /* Skip */
-  skipWrap:{alignItems:'center',paddingVertical:12,marginBottom:4},
-  skipText:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,textDecorationLine:'underline'},
-
-  /* Success */
-  successOverlay:{
+  successOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor:'rgba(11,66,38,0.92)',
-    alignItems:'center',justifyContent:'center',
+    backgroundColor: 'rgba(11,66,38,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  successCard:{
-    backgroundColor:COLORS.white,borderRadius:24,padding:SPACING.xl,
-    alignItems:'center',width:'80%',
-    shadowColor:'#000',shadowOffset:{width:0,height:8},shadowOpacity:0.2,shadowRadius:20,elevation:10,
+  successCard: {
+    backgroundColor: colors.white,
+    borderRadius: 24,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    width: '80%',
   },
-  successIcon:{fontSize:52,marginBottom:SPACING.sm},
-  successTitle:{fontSize:22,fontWeight:'800',fontFamily:'Inter',color:COLORS.primary,marginBottom:6},
-  successSub:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary,textAlign:'center'},
+  successIcon: {fontSize: 52, marginBottom: SPACING.sm},
+  successTitle: {fontSize: 22, fontWeight: '800', fontFamily: 'Inter', color: colors.primary, marginBottom: 6},
+  successSub: {fontSize: 14, fontFamily: 'Inter', color: colors.textSecondary, textAlign: 'center'},
 });
+
+let plaidScriptPromise = null;
+
+function ensurePlaidScript() {
+  if (Platform.OS !== 'web') return Promise.resolve();
+  const win = global?.window;
+  if (!win) return Promise.reject(new Error('Web window unavailable'));
+  if (win.Plaid) return Promise.resolve();
+  if (plaidScriptPromise) return plaidScriptPromise;
+
+  plaidScriptPromise = new Promise((resolve, reject) => {
+    const script = win.document.createElement('script');
+    script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Plaid script'));
+    win.document.body.appendChild(script);
+  });
+
+  return plaidScriptPromise;
+}
+
+async function searchInstitutions(query) {
+  const q = (query || '').trim();
+  const endpoint = q
+    ? `/.netlify/functions/plaid-search-institutions?q=${encodeURIComponent(q)}`
+    : '/.netlify/functions/plaid-search-institutions';
+  const res = await fetch(endpoint);
+  const data = await res.json();
+  if (!res.ok || !Array.isArray(data.institutions)) {
+    throw new Error(data.error || 'Unable to search institutions.');
+  }
+  return data.institutions;
+}
+
+function normalizeUrl(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  return `https://${raw}`;
+}
+
+function formatDomain(raw) {
+  const url = normalizeUrl(raw);
+  if (!url) return '';
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return raw;
+  }
+}
+
+async function createLinkToken() {
+  const res = await fetch('/.netlify/functions/plaid-create-link-token', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({userId: `user-${Date.now()}`}),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.link_token) {
+    throw new Error(data.error || 'Unable to create Plaid link token.');
+  }
+  return data.link_token;
+}
+
+async function exchangePublicToken(publicToken, institutionName) {
+  const res = await fetch('/.netlify/functions/plaid-exchange-public-token', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({publicToken, institutionName}),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Unable to exchange Plaid token.');
+  }
+  return data;
+}

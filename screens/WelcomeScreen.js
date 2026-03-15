@@ -1,14 +1,18 @@
 import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 
-import common, {SPACING, COLORS} from '../styles/common';
+import common, {SPACING} from '../styles/common';
 import PrimaryButton from '../components/PrimaryButton';
 import BrandLogo from '../components/BrandLogo';
 import {BRANDING} from '../assets/branding';
+import {useAppTheme} from '../theme/ThemeContext';
 
 export default function WelcomeScreen({navigation}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
-    <View style={[common.screen, styles.screen]}>
+    <View style={[common.screen, styles.screen, {backgroundColor: colors.background}]}>
       <View style={styles.logoWrap}>
         <BrandLogo
           size={52}
@@ -23,10 +27,10 @@ export default function WelcomeScreen({navigation}){
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   screen: {alignItems: 'center', justifyContent: 'flex-start'},
   logoWrap:{marginTop:72, marginBottom:SPACING.xl},
-  headline:{textAlign:'center'},
-  tag:{marginTop:SPACING.sm, marginBottom:SPACING.lg, color:COLORS.primary},
+  headline:{textAlign:'center', color: colors.text},
+  tag:{marginTop:SPACING.sm, marginBottom:SPACING.lg, color:colors.primary},
   button:{marginTop:SPACING.md,minWidth:240},
 });

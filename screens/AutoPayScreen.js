@@ -1,7 +1,8 @@
 import React from 'react';
 import {ScrollView, Text, StyleSheet, TouchableOpacity, View, Switch} from 'react-native';
 
-import common, {SPACING, COLORS} from '../styles/common';
+import common, {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 import ProgressBar from '../components/ProgressBar';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -20,13 +21,19 @@ function daysUntil(dayOfMonth) {
   return Math.ceil((d - now) / (1000 * 60 * 60 * 24));
 }
 
-export default function AutoPayScreen({bills=[], navigation, onToggleAutoPay}){
+export default function AutoPayScreen({navigation, bills = [], onToggleAutoPay}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
   const totalBills = bills.reduce((s, b) => s + (b.amount || 0), 0);
   const totalSaved = bills.reduce((s, b) => s + (b.saved || 0), 0);
   const autoCount  = bills.filter(b => b.autoPay).length;
 
   return (
-    <ScrollView style={common.screen} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[common.screen, {backgroundColor: colors.background}]}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.screenTitle}>Bills</Text>
 
       {/* Summary strip */}
@@ -94,8 +101,8 @@ export default function AutoPayScreen({bills=[], navigation, onToggleAutoPay}){
               <Switch
                 value={!!bill.autoPay}
                 onValueChange={() => onToggleAutoPay && onToggleAutoPay(bill.id)}
-                trackColor={{false: COLORS.border, true: COLORS.primary}}
-                thumbColor={COLORS.white}
+                trackColor={{false: colors.border, true: colors.primary}}
+                thumbColor={colors.white}
               />
             </View>
           </TouchableOpacity>
@@ -109,62 +116,62 @@ export default function AutoPayScreen({bills=[], navigation, onToggleAutoPay}){
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:120},
-  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text,marginBottom:SPACING.md},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:SPACING.md},
 
   summaryRow:{
     flexDirection:'row',
-    backgroundColor:COLORS.white,
+    backgroundColor:colors.white,
     borderRadius:14,
     borderWidth:1,
-    borderColor:COLORS.border,
+    borderColor:colors.border,
     marginBottom:SPACING.md,
     padding:SPACING.md,
     shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.05,shadowRadius:6,elevation:2,
   },
   summaryItem:{flex:1,alignItems:'center'},
-  summaryDivider:{width:1,backgroundColor:COLORS.border,marginVertical:4},
-  summaryNumber:{fontSize:20,fontWeight:'800',fontFamily:'Inter',color:COLORS.primary},
-  summaryLabel:{fontSize:11,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+  summaryDivider:{width:1,backgroundColor:colors.border,marginVertical:4},
+  summaryNumber:{fontSize:20,fontWeight:'800',fontFamily:'Inter',color:colors.primary},
+  summaryLabel:{fontSize:11,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
 
-  emptyCard:{backgroundColor:COLORS.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:COLORS.border,alignItems:'center',marginBottom:SPACING.md},
-  emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:COLORS.text,marginBottom:4},
-  emptyBody:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary,textAlign:'center'},
+  emptyCard:{backgroundColor:colors.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:colors.border,alignItems:'center',marginBottom:SPACING.md},
+  emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text,marginBottom:4},
+  emptyBody:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary,textAlign:'center'},
 
   billCard:{
-    backgroundColor:COLORS.white,
+    backgroundColor:colors.white,
     borderRadius:16,
     padding:SPACING.md,
     marginBottom:SPACING.sm,
     borderWidth:1,
-    borderColor:COLORS.border,
+    borderColor:colors.border,
     shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.06,shadowRadius:8,elevation:2,
   },
-  billCardUrgent:{borderColor:'#F4C2C2',backgroundColor:'#FFFAFA'},
+  billCardUrgent:{borderColor:colors.dangerBorder,backgroundColor:colors.dangerBg},
 
   billTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',marginBottom:SPACING.sm},
   billTitleWrap:{flex:1},
-  billName:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:COLORS.text},
-  billCompany:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+  billName:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  billCompany:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
   billAmountWrap:{alignItems:'flex-end'},
-  billAmount:{fontSize:20,fontWeight:'800',fontFamily:'Inter',color:COLORS.text},
-  daysBadge:{marginTop:4,backgroundColor:COLORS.background,borderRadius:8,paddingHorizontal:8,paddingVertical:3},
-  daysBadgeUrgent:{backgroundColor:'#FDECEC'},
-  daysBadgeText:{fontSize:11,fontWeight:'600',fontFamily:'Inter',color:COLORS.primary},
-  daysBadgeTextUrgent:{color:'#C62828'},
+  billAmount:{fontSize:20,fontWeight:'800',fontFamily:'Inter',color:colors.text},
+  daysBadge:{marginTop:4,backgroundColor:colors.background,borderRadius:8,paddingHorizontal:8,paddingVertical:3},
+  daysBadgeUrgent:{backgroundColor:colors.dangerBg},
+  daysBadgeText:{fontSize:11,fontWeight:'600',fontFamily:'Inter',color:colors.primary},
+  daysBadgeTextUrgent:{color:colors.dangerText},
 
   progressWrap:{marginBottom:SPACING.sm},
-  progressLabel:{fontSize:11,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:4},
+  progressLabel:{fontSize:11,fontFamily:'Inter',color:colors.textSecondary,marginTop:4},
 
-  billBottom:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderTopWidth:1,borderTopColor:COLORS.border,paddingTop:SPACING.sm},
-  billBottomLabel:{fontSize:14,fontWeight:'600',fontFamily:'Inter',color:COLORS.text},
+  billBottom:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderTopWidth:1,borderTopColor:colors.border,paddingTop:SPACING.sm},
+  billBottomLabel:{fontSize:14,fontWeight:'600',fontFamily:'Inter',color:colors.text},
 
   addButton:{
-    borderWidth:1.5,borderColor:COLORS.primary,borderRadius:14,
+    borderWidth:1.5,borderColor:colors.primary,borderRadius:14,
     padding:SPACING.md,alignItems:'center',
     borderStyle:'dashed',marginTop:SPACING.xs,
   },
-  addButtonText:{color:COLORS.primary,fontWeight:'700',fontFamily:'Inter',fontSize:15},
+  addButtonText:{color:colors.primary,fontWeight:'700',fontFamily:'Inter',fontSize:15},
 });
 

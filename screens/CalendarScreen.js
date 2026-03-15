@@ -1,7 +1,8 @@
 import React, {useMemo, useState, useEffect} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, ScrollView} from 'react-native';
 
-import common, {SPACING, COLORS} from '../styles/common';
+import common, {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS_OF_WEEK = ['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -20,7 +21,9 @@ function daysUntil(day) {
   return Math.ceil((d - now) / (1000 * 60 * 60 * 24));
 }
 
-export default function CalendarScreen({bills=[]}){
+export default function CalendarScreen({bills = []}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
   const [viewMode, setViewMode] = useState('calendar');
 
   const events = useMemo(() => {
@@ -51,7 +54,11 @@ export default function CalendarScreen({bills=[]}){
   const selectedEvent = events.find(e => e.date === selectedDate);
 
   return (
-    <ScrollView style={common.screen} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[common.screen, {backgroundColor: colors.background}]}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.screenTitle}>Calendar</Text>
 
       {/* View mode toggle */}
@@ -90,7 +97,7 @@ export default function CalendarScreen({bills=[]}){
                   <Text style={[styles.chipDay, active && styles.chipDayActive, urgent && !active && styles.chipDayUrgent]}>
                     {event.date}
                   </Text>
-                  <Text style={[styles.chipSub, active && {color:'rgba(255,255,255,0.8)'}]}>
+                  <Text style={[styles.chipSub, active && {color:colors.onPrimaryMuted}]}>
                     {MONTHS[new Date(new Date().getFullYear(), new Date().getMonth(), Number(event.date)).getMonth()]}
                   </Text>
                 </TouchableOpacity>
@@ -150,7 +157,7 @@ export default function CalendarScreen({bills=[]}){
               </View>
               <View style={styles.listRight}>
                 <Text style={styles.listAmount}>${event.amount}</Text>
-                <Text style={[styles.listDays, urgent && {color:'#C62828'}]}>{days}d</Text>
+                <Text style={[styles.listDays, urgent && {color:colors.dangerText}]}>{days}d</Text>
               </View>
             </View>
           );
@@ -160,62 +167,62 @@ export default function CalendarScreen({bills=[]}){
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:120},
-  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text,marginBottom:SPACING.md},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:SPACING.md},
 
   segmentRow:{
     flexDirection:'row',
-    backgroundColor:COLORS.white,
+    backgroundColor:colors.white,
     borderRadius:12,
     borderWidth:1,
-    borderColor:COLORS.border,
+    borderColor:colors.border,
     padding:4,
     marginBottom:SPACING.md,
   },
   segment:{flex:1,paddingVertical:8,alignItems:'center',borderRadius:10},
-  segmentActive:{backgroundColor:COLORS.primary},
-  segmentText:{fontSize:14,fontFamily:'Inter',fontWeight:'600',color:COLORS.textSecondary},
-  segmentTextActive:{fontSize:14,fontFamily:'Inter',fontWeight:'700',color:COLORS.white},
+  segmentActive:{backgroundColor:colors.primary},
+  segmentText:{fontSize:14,fontFamily:'Inter',fontWeight:'600',color:colors.textSecondary},
+  segmentTextActive:{fontSize:14,fontFamily:'Inter',fontWeight:'700',color:colors.white},
 
-  emptyCard:{backgroundColor:COLORS.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:COLORS.border,alignItems:'center'},
-  emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:COLORS.text,marginBottom:4},
-  emptyBody:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary,textAlign:'center'},
+  emptyCard:{backgroundColor:colors.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:colors.border,alignItems:'center'},
+  emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text,marginBottom:4},
+  emptyBody:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary,textAlign:'center'},
 
   chipGrid:{flexDirection:'row',flexWrap:'wrap',gap:8,marginBottom:SPACING.md},
-  chip:{width:60,paddingVertical:10,borderRadius:12,borderWidth:1,borderColor:COLORS.border,backgroundColor:COLORS.white,alignItems:'center'},
-  chipActive:{backgroundColor:COLORS.primary,borderColor:COLORS.primary},
-  chipUrgent:{borderColor:'#F4C2C2',backgroundColor:'#FFFAFA'},
-  chipDay:{fontSize:18,fontWeight:'800',fontFamily:'Inter',color:COLORS.text},
-  chipDayActive:{color:COLORS.white},
-  chipDayUrgent:{color:'#C62828'},
-  chipSub:{fontSize:10,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+  chip:{width:60,paddingVertical:10,borderRadius:12,borderWidth:1,borderColor:colors.border,backgroundColor:colors.white,alignItems:'center'},
+  chipActive:{backgroundColor:colors.primary,borderColor:colors.primary},
+  chipUrgent:{borderColor:colors.dangerBorder,backgroundColor:colors.dangerBg},
+  chipDay:{fontSize:18,fontWeight:'800',fontFamily:'Inter',color:colors.text},
+  chipDayActive:{color:colors.onPrimary},
+  chipDayUrgent:{color:colors.dangerText},
+  chipSub:{fontSize:10,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
 
   detailCard:{
-    backgroundColor:COLORS.white,
+    backgroundColor:colors.white,
     borderRadius:16,
     padding:SPACING.md,
     borderWidth:1,
-    borderColor:COLORS.border,
+    borderColor:colors.border,
     shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.06,shadowRadius:8,elevation:2,
   },
   detailHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',marginBottom:SPACING.md},
-  detailBillName:{fontSize:18,fontWeight:'700',fontFamily:'Inter',color:COLORS.text},
-  detailDue:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+  detailBillName:{fontSize:18,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  detailDue:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
   pill:{borderRadius:20,paddingHorizontal:10,paddingVertical:4,borderWidth:1},
-  pillGreen:{backgroundColor:COLORS.successBg,borderColor:COLORS.successBorder},
-  pillGray:{backgroundColor:COLORS.subtleBg,borderColor:COLORS.border},
+  pillGreen:{backgroundColor:colors.successBg,borderColor:colors.successBorder},
+  pillGray:{backgroundColor:colors.subtleBg,borderColor:colors.border},
   pillText:{fontSize:12,fontWeight:'600',fontFamily:'Inter'},
-  pillTextGreen:{color:COLORS.successText},
-  pillTextGray:{color:COLORS.textSecondary},
+  pillTextGreen:{color:colors.successText},
+  pillTextGray:{color:colors.textSecondary},
   detailStats:{flexDirection:'row'},
   detailStat:{flex:1,alignItems:'center'},
-  detailStatDivider:{width:1,backgroundColor:COLORS.border,marginVertical:4},
-  detailStatNumber:{fontSize:20,fontWeight:'800',fontFamily:'Inter',color:COLORS.primary},
-  detailStatLabel:{fontSize:11,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+  detailStatDivider:{width:1,backgroundColor:colors.border,marginVertical:4},
+  detailStatNumber:{fontSize:20,fontWeight:'800',fontFamily:'Inter',color:colors.primary},
+  detailStatLabel:{fontSize:11,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
 
   listRow:{
-    backgroundColor:COLORS.white,
+    backgroundColor:colors.white,
     borderRadius:14,
     padding:SPACING.md,
     flexDirection:'row',
@@ -223,21 +230,21 @@ const styles = StyleSheet.create({
     justifyContent:'space-between',
     marginBottom:8,
     borderWidth:1,
-    borderColor:COLORS.border,
+    borderColor:colors.border,
     shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.04,shadowRadius:4,elevation:1,
   },
-  listRowUrgent:{borderColor:'#F4C2C2',backgroundColor:'#FFFAFA'},
+  listRowUrgent:{borderColor:colors.dangerBorder,backgroundColor:colors.dangerBg},
   listLeft:{flexDirection:'row',alignItems:'center',flex:1},
   listDateBadge:{
     width:44,height:44,borderRadius:10,
-    backgroundColor:COLORS.background,borderWidth:1,borderColor:COLORS.border,
+    backgroundColor:colors.background,borderWidth:1,borderColor:colors.border,
     alignItems:'center',justifyContent:'center',marginRight:12,
   },
-  listDateDay:{fontSize:16,fontWeight:'800',fontFamily:'Inter',color:COLORS.primary},
-  listDateMon:{fontSize:9,fontFamily:'Inter',color:COLORS.textSecondary},
-  listBillName:{fontSize:15,fontWeight:'600',fontFamily:'Inter',color:COLORS.text},
-  listMeta:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+  listDateDay:{fontSize:16,fontWeight:'800',fontFamily:'Inter',color:colors.primary},
+  listDateMon:{fontSize:9,fontFamily:'Inter',color:colors.textSecondary},
+  listBillName:{fontSize:15,fontWeight:'600',fontFamily:'Inter',color:colors.text},
+  listMeta:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
   listRight:{alignItems:'flex-end'},
-  listAmount:{fontSize:15,fontWeight:'700',fontFamily:'Inter',color:COLORS.text},
-  listDays:{fontSize:11,fontFamily:'Inter',color:COLORS.primary,fontWeight:'600',marginTop:2},
+  listAmount:{fontSize:15,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  listDays:{fontSize:11,fontFamily:'Inter',color:colors.primary,fontWeight:'600',marginTop:2},
 });

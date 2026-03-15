@@ -1,7 +1,8 @@
 import React, {useState} from 'react';
 import {ScrollView, Text, View, TouchableOpacity, StyleSheet, Linking} from 'react-native';
 
-import common, {SPACING, COLORS} from '../styles/common';
+import common, {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 
 const FAQS = [
   {q:'How does RightHand automatically save for my bills?', a:'RightHand sets aside small amounts from each paycheck so your bill money is ready before due dates.'},
@@ -18,7 +19,9 @@ const FAQS = [
   {q:'Is my bank and personal information secure with RightHand?', a:'Yes. RightHand uses secure connections and industry-standard encryption to protect your data.'},
 ];
 
-export default function HelpScreen(){
+export default function HelpScreen({navigation}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
   const [open, setOpen] = useState(null);
 
   return (
@@ -54,50 +57,50 @@ export default function HelpScreen(){
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:60},
-  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text,marginBottom:4},
-  screenSub:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary,marginBottom:SPACING.md},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:4},
+  screenSub:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary,marginBottom:SPACING.md},
 
   faqCard:{
-    backgroundColor:COLORS.white,
+    backgroundColor:colors.white,
     borderRadius:14,marginBottom:8,
-    borderWidth:1,borderColor:COLORS.border,
+    borderWidth:1,borderColor:colors.border,
     overflow:'hidden',
     shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.04,shadowRadius:4,elevation:1,
   },
-  faqCardOpen:{borderColor:COLORS.primary},
+  faqCardOpen:{borderColor:colors.primary},
 
   faqHeader:{
     flexDirection:'row',alignItems:'center',justifyContent:'space-between',
     padding:SPACING.md,
   },
   faqQuestion:{
-    flex:1,fontSize:14,fontWeight:'500',fontFamily:'Inter',color:COLORS.text,
+    flex:1,fontSize:14,fontWeight:'500',fontFamily:'Inter',color:colors.text,
     paddingRight:SPACING.sm,lineHeight:20,
   },
-  faqQuestionOpen:{color:COLORS.primary,fontWeight:'600'},
+  faqQuestionOpen:{color:colors.primary,fontWeight:'600'},
   chevron:{
     fontSize:18,fontWeight:'700',fontFamily:'Inter',
-    color:COLORS.border,width:22,textAlign:'center',
+    color:colors.border,width:22,textAlign:'center',
   },
-  chevronOpen:{color:COLORS.primary},
+  chevronOpen:{color:colors.primary},
 
   faqBody:{
     paddingHorizontal:SPACING.md,paddingBottom:SPACING.md,
-    borderTopWidth:1,borderTopColor:COLORS.border,
+    borderTopWidth:1,borderTopColor:colors.border,
     paddingTop:SPACING.sm,
   },
-  faqAnswer:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary,lineHeight:21},
+  faqAnswer:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary,lineHeight:21},
 
   contactCard:{
-    backgroundColor:COLORS.primary,
+    backgroundColor:colors.primary,
     borderRadius:16,padding:SPACING.lg,marginTop:SPACING.sm,
     flexDirection:'row',alignItems:'center',justifyContent:'space-between',
     shadowColor:'#000',shadowOffset:{width:0,height:4},shadowOpacity:0.12,shadowRadius:10,elevation:3,
   },
-  contactTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:'#fff'},
-  contactSub:{fontSize:13,fontFamily:'Inter',color:'rgba(255,255,255,0.75)',marginTop:2},
-  contactArrow:{fontSize:22,color:'#fff',fontWeight:'300'},
+  contactTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.onPrimary},
+  contactSub:{fontSize:13,fontFamily:'Inter',color:colors.onPrimaryMuted,marginTop:2},
+  contactArrow:{fontSize:22,color:colors.onPrimary,fontWeight:'300'},
 });
 

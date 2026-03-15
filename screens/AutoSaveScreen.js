@@ -1,11 +1,14 @@
 import React, {useState} from 'react';
 import {ScrollView, View, Text, TextInput, TouchableOpacity, Switch, StyleSheet} from 'react-native';
-import common, {SPACING, COLORS} from '../styles/common';
+import common, {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 import PrimaryButton from '../components/PrimaryButton';
 
 const FREQUENCIES = ['Weekly', 'Bi-weekly', 'Semi-monthly', 'Monthly'];
 
-export default function AutoSaveScreen({navigation, route}){
+export default function AutoSaveScreen({route, navigation}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
   const existing = route?.params?.autoSave || {};
 
   const [enabled, setEnabled]       = useState(existing.enabled ?? false);
@@ -29,7 +32,7 @@ export default function AutoSaveScreen({navigation, route}){
   return (
     <ScrollView style={common.screen} contentContainerStyle={{paddingBottom:40}}>
       <Text style={[common.title, common.titleBlock]}>Auto Save</Text>
-      <Text style={[common.body, {marginBottom: SPACING.lg, color: COLORS.textSecondary}]}>
+      <Text style={[common.body, {marginBottom: SPACING.lg, color: colors.textSecondary}]}>
         RightHand sets aside money automatically each time you get paid, so your bills are always covered.
       </Text>
 
@@ -39,8 +42,8 @@ export default function AutoSaveScreen({navigation, route}){
         <Switch
           value={enabled}
           onValueChange={setEnabled}
-          trackColor={{false: COLORS.border, true: COLORS.primary}}
-          thumbColor={COLORS.white}
+          trackColor={{false: colors.border, true: colors.primary}}
+          thumbColor={colors.white}
         />
       </View>
 
@@ -71,12 +74,12 @@ export default function AutoSaveScreen({navigation, route}){
                 style={styles.amountInput}
                 keyboardType="decimal-pad"
                 placeholder={amountType === 'fixed' ? '0.00' : '0'}
-                placeholderTextColor={COLORS.border}
+                placeholderTextColor={colors.border}
                 value={amount}
                 onChangeText={setAmount}
               />
             </View>
-            <Text style={[common.caption, {color: COLORS.textSecondary, marginTop: SPACING.xs}]}>
+            <Text style={[common.caption, {color: colors.textSecondary, marginTop: SPACING.xs}]}>
               {amountType === 'fixed'
                 ? 'This amount will be moved to savings automatically each pay period.'
                 : 'This percentage of your paycheck will be moved to savings each pay period.'}
@@ -105,11 +108,11 @@ export default function AutoSaveScreen({navigation, route}){
             <TextInput
               style={common.input}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor={COLORS.border}
+              placeholderTextColor={colors.border}
               value={nextPayDate}
               onChangeText={setNextPayDate}
             />
-            <Text style={[common.caption, {color: COLORS.textSecondary, marginTop: SPACING.xs}]}>
+            <Text style={[common.caption, {color: colors.textSecondary, marginTop: SPACING.xs}]}>
               RightHand uses this to predict when your next auto save will run.
             </Text>
           </View>
@@ -121,30 +124,30 @@ export default function AutoSaveScreen({navigation, route}){
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   toggleRow:{
     flexDirection:'row',
     justifyContent:'space-between',
     alignItems:'center',
-    backgroundColor:COLORS.white,
+    backgroundColor:colors.white,
     padding:SPACING.md,
     borderRadius:12,
     borderWidth:1,
-    borderColor:COLORS.border,
+    borderColor:colors.border,
     marginBottom:SPACING.md,
   },
   section:{
-    backgroundColor:COLORS.white,
+    backgroundColor:colors.white,
     padding:SPACING.md,
     borderRadius:12,
     borderWidth:1,
-    borderColor:COLORS.border,
+    borderColor:colors.border,
     marginBottom:SPACING.md,
   },
   segmentRow:{
     flexDirection:'row',
     borderWidth:1,
-    borderColor:COLORS.border,
+    borderColor:colors.border,
     borderRadius:8,
     overflow:'hidden',
     marginTop:SPACING.sm,
@@ -154,43 +157,43 @@ const styles = StyleSheet.create({
     flex:1,
     paddingVertical:8,
     alignItems:'center',
-    backgroundColor:COLORS.subtleBg,
+    backgroundColor:colors.subtleBg,
   },
   segmentActive:{
-    backgroundColor:COLORS.primary,
+    backgroundColor:colors.primary,
   },
   segmentText:{
     fontFamily:'Inter',
     fontSize:14,
-    color:COLORS.textSecondary,
+    color:colors.textSecondary,
   },
   segmentTextActive:{
     fontFamily:'Inter',
     fontSize:14,
     fontWeight:'700',
-    color:COLORS.white,
+    color:colors.white,
   },
   amountRow:{
     flexDirection:'row',
     alignItems:'center',
     borderWidth:1,
-    borderColor:COLORS.border,
+    borderColor:colors.border,
     borderRadius:8,
     paddingHorizontal:SPACING.sm,
     marginTop:SPACING.xs,
-    backgroundColor:COLORS.background,
+    backgroundColor:colors.background,
   },
   amountPrefix:{
     fontSize:18,
     fontWeight:'700',
-    color:COLORS.primary,
+    color:colors.primary,
     marginRight:6,
   },
   amountInput:{
     flex:1,
     fontSize:18,
     fontFamily:'Inter',
-    color:COLORS.text,
+    color:colors.text,
     paddingVertical:10,
     outlineStyle:'none',
   },
@@ -205,22 +208,22 @@ const styles = StyleSheet.create({
     paddingVertical:8,
     borderRadius:20,
     borderWidth:1,
-    borderColor:COLORS.border,
-    backgroundColor:COLORS.subtleBg,
+    borderColor:colors.border,
+    backgroundColor:colors.subtleBg,
   },
   chipActive:{
-    borderColor:COLORS.primary,
-    backgroundColor:COLORS.primary,
+    borderColor:colors.primary,
+    backgroundColor:colors.primary,
   },
   chipText:{
     fontFamily:'Inter',
     fontSize:14,
-    color:COLORS.textSecondary,
+    color:colors.textSecondary,
   },
   chipTextActive:{
     fontFamily:'Inter',
     fontSize:14,
     fontWeight:'700',
-    color:COLORS.white,
+    color:colors.white,
   },
 });

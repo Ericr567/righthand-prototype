@@ -23,9 +23,63 @@ Build static website output:
 npm run build:web
 ```
 
+## Plaid Bank Connection Setup
+
+This project now includes a real Plaid Link flow on the Bank tab for web deploys.
+
+Set these Netlify environment variables before deploying:
+
+- `PLAID_CLIENT_ID`
+- `PLAID_SECRET`
+- `PLAID_ENV` (`sandbox`, `development`, or `production`)
+- `PLAID_PRODUCTS` (optional, default: `auth,transactions`)
+- `PLAID_COUNTRY_CODES` (optional, default: `US`)
+- `PLAID_REDIRECT_URI` (optional, required for some OAuth institutions)
+
+Serverless endpoints added:
+
+- `/.netlify/functions/plaid-create-link-token`
+- `/.netlify/functions/plaid-exchange-public-token`
+
+Important: this is prototype-safe only. The exchange function currently returns a success payload and does not persist tokens. For production, store encrypted `access_token` and `item_id` in your backend database.
+
 ---
 
 ## Changelog
+
+### 2026-03-15 — Persistence, Plaid flow completion, and dark mode hardening
+
+#### Platform and state
+- Added AsyncStorage-backed persistence for bills, transactions, auto-save settings, and theme mode in App root state.
+- Added hydration guard and centralized app-state serialization key.
+
+#### Theming
+- Added global theme context with light/dark palettes and navigation theme builder.
+- Added dark mode switch in Settings and persisted theme preference.
+- Applied theme-based colors across major screens and components.
+- Fixed dark mode root background rendering on Bills and Calendar screens.
+
+#### Plaid integration
+- Added Netlify functions for:
+	- `/.netlify/functions/plaid-create-link-token`
+	- `/.netlify/functions/plaid-search-institutions`
+	- `/.netlify/functions/plaid-exchange-public-token`
+- Updated Bank tab flow to:
+	- search institutions,
+	- choose from dropdown,
+	- open institution login page,
+	- launch Plaid Link and exchange token.
+- Hardened serverless error responses to avoid leaking raw provider error details.
+
+#### UX and accessibility improvements
+- Added progress semantics in `ProgressBar`.
+- Improved bill details accessibility labels/hints and grouped readable semantics.
+- Added dashboard decision-support modules: certainty score, miss-risk alerts, paycheck allocation preview.
+
+#### Validation and deployment
+- Verified production endpoint health for root, institution search, link-token creation, and token exchange.
+- Executed end-to-end Plaid exchange success-path test in sandbox.
+- Removed temporary test endpoint and redeployed clean production surface.
 
 ### 2026-03-14 — Full UI/UX overhaul + new screens
 

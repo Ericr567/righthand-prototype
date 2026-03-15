@@ -1,13 +1,16 @@
 import React, {useState, useEffect} from 'react';
 import {ScrollView, Text, TextInput, TouchableOpacity, StyleSheet, View} from 'react-native';
 
-import common, {SPACING, COLORS} from '../styles/common';
+import common, {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 import PrimaryButton from '../components/PrimaryButton';
 
 const DUE_OPTIONS  = ['1','5','10','15','20','25','30'];
 const FREQ_OPTIONS = ['Monthly','Weekly','Yearly'];
 
 export default function AddBillScreen({navigation, route, onSave}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
   const existing = route.params?.bill;
   const [name,     setName]     = useState('');
   const [amount,   setAmount]   = useState('');
@@ -45,7 +48,7 @@ export default function AddBillScreen({navigation, route, onSave}){
         <Text style={styles.fieldLabel}>Bill Name</Text>
         <TextInput
           placeholder="e.g. Electric, Rent"
-          placeholderTextColor={COLORS.border}
+          placeholderTextColor={colors.border}
           style={styles.input}
           value={name}
           onChangeText={setName}
@@ -56,7 +59,7 @@ export default function AddBillScreen({navigation, route, onSave}){
           <Text style={styles.amountPrefix}>$</Text>
           <TextInput
             placeholder="0.00"
-            placeholderTextColor={COLORS.border}
+            placeholderTextColor={colors.border}
             keyboardType="decimal-pad"
             style={styles.amountInput}
             value={amount}
@@ -67,7 +70,7 @@ export default function AddBillScreen({navigation, route, onSave}){
         <Text style={[styles.fieldLabel, {marginTop:SPACING.sm}]}>Company / Provider (optional)</Text>
         <TextInput
           placeholder="e.g. AT&T, Duke Energy"
-          placeholderTextColor={COLORS.border}
+          placeholderTextColor={colors.border}
           style={styles.input}
           value={company}
           onChangeText={setCompany}
@@ -113,37 +116,37 @@ export default function AddBillScreen({navigation, route, onSave}){
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md,paddingBottom:60},
-  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text,marginBottom:SPACING.md},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:SPACING.md},
 
   formCard:{
-    backgroundColor:COLORS.white,borderRadius:16,padding:SPACING.md,
-    borderWidth:1,borderColor:COLORS.border,marginBottom:SPACING.md,
+    backgroundColor:colors.white,borderRadius:16,padding:SPACING.md,
+    borderWidth:1,borderColor:colors.border,marginBottom:SPACING.md,
     shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.05,shadowRadius:6,elevation:2,
   },
-  fieldLabel:{fontSize:13,fontWeight:'700',fontFamily:'Inter',color:COLORS.text,marginBottom:4},
-  fieldHint:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginBottom:SPACING.sm},
+  fieldLabel:{fontSize:13,fontWeight:'700',fontFamily:'Inter',color:colors.text,marginBottom:4},
+  fieldHint:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginBottom:SPACING.sm},
 
   input:{
-    borderWidth:1,borderColor:COLORS.border,borderRadius:10,
-    padding:SPACING.sm,fontFamily:'Inter',fontSize:15,color:COLORS.text,
-    backgroundColor:COLORS.background,outlineStyle:'none',
+    borderWidth:1,borderColor:colors.border,borderRadius:10,
+    padding:SPACING.sm,fontFamily:'Inter',fontSize:15,color:colors.text,
+    backgroundColor:colors.background,outlineStyle:'none',
   },
   amountRow:{
     flexDirection:'row',alignItems:'center',
-    borderWidth:1,borderColor:COLORS.border,borderRadius:10,
-    paddingHorizontal:SPACING.sm,backgroundColor:COLORS.background,
+    borderWidth:1,borderColor:colors.border,borderRadius:10,
+    paddingHorizontal:SPACING.sm,backgroundColor:colors.background,
   },
-  amountPrefix:{fontSize:20,fontWeight:'700',color:COLORS.primary,marginRight:6},
-  amountInput:{flex:1,fontSize:20,fontFamily:'Inter',color:COLORS.text,paddingVertical:10,outlineStyle:'none'},
+  amountPrefix:{fontSize:20,fontWeight:'700',color:colors.primary,marginRight:6},
+  amountInput:{flex:1,fontSize:20,fontFamily:'Inter',color:colors.text,paddingVertical:10,outlineStyle:'none'},
 
   chipRow:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:SPACING.xs},
-  chip:{paddingHorizontal:14,paddingVertical:8,borderRadius:20,borderWidth:1,borderColor:COLORS.border,backgroundColor:COLORS.background},
-  chipActive:{borderColor:COLORS.primary,backgroundColor:COLORS.primary},
-  chipText:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary},
-  chipTextActive:{fontSize:14,fontFamily:'Inter',fontWeight:'700',color:COLORS.white},
+  chip:{paddingHorizontal:14,paddingVertical:8,borderRadius:20,borderWidth:1,borderColor:colors.border,backgroundColor:colors.background},
+  chipActive:{borderColor:colors.primary,backgroundColor:colors.primary},
+  chipText:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary},
+  chipTextActive:{fontSize:14,fontFamily:'Inter',fontWeight:'700',color:colors.white},
 
   cancelBtn:{alignItems:'center',paddingVertical:SPACING.md},
-  cancelText:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary},
+  cancelText:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary},
 });

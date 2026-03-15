@@ -1,5 +1,15 @@
 # Project TODOs and Feature Gaps
 
+## Recent Completed Work (2026-03-15)
+
+- Added persistent app state hydration/saving via AsyncStorage for bills, transactions, auto-save config, and theme mode.
+- Implemented global light/dark theme support with runtime toggle in Settings and applied theme tokens across core screens.
+- Fixed dark mode background rendering on Bills and Calendar screens.
+- Added Plaid serverless integration for link-token creation, institution search, and public-token exchange.
+- Reworked Bank connection flow to searchable dropdown with institution login-page links.
+- Added accessibility improvements including progress semantics and richer labels/hints on key bill details interactions.
+- Added dashboard enhancements: certainty score, miss-risk alerts, and paycheck allocation preview.
+
 ## UI/Navigation placeholders
 
 - Dashboard:
@@ -14,7 +24,7 @@
   - validation feedback
   - confirm success message
 - BankConnect:
-  - integrate with actual Plaid or mock connection
+  - evaluate mobile-native Plaid Link support path (web flow is complete)
 - Notifications:
   - persistent notifications storage
 - Help:
@@ -23,8 +33,7 @@
 ## General TODOs
 
 - Add unit/component tests
-- Improve accessibility labels and hints
-- Implement dark mode theming
+- Expand accessibility audit and fix remaining edge cases
 - Add analytics / crash reporting
 - Build API service layer and secure storage
 

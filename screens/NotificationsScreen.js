@@ -1,9 +1,12 @@
 import React from 'react';
 import {ScrollView, Text, View, TouchableOpacity, StyleSheet, Switch} from 'react-native';
 
-import common, {SPACING, COLORS} from '../styles/common';
+import common, {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 
-export default function NotificationsScreen({bills=[]}){
+export default function NotificationsScreen({bills = []}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
   const [inApp,  setInApp]  = React.useState(true);
   const [phone,  setPhone]  = React.useState(false);
 
@@ -22,8 +25,8 @@ export default function NotificationsScreen({bills=[]}){
   const unread = notes.length;
 
   const typeIcon  = {savings:'💰', due:'📅', status:'⚡'};
-  const typeColor = {savings:COLORS.successBg, due:'#EEF2FF', status:'#FFF8E1'};
-  const typeBorder= {savings:COLORS.successBorder, due:'#C7D2FE', status:'#FFE082'};
+  const typeColor = {savings:colors.successBg, due:colors.infoBg, status:colors.warningBg};
+  const typeBorder= {savings:colors.successBorder, due:colors.infoBorder, status:colors.warningBorder};
 
   return (
     <ScrollView style={common.screen} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -46,11 +49,11 @@ export default function NotificationsScreen({bills=[]}){
           <Switch
             value={inApp}
             onValueChange={setInApp}
-            trackColor={{false:COLORS.border, true:COLORS.primary}}
-            thumbColor={COLORS.white}
+            trackColor={{false:colors.border, true:colors.primary}}
+            thumbColor={colors.white}
           />
         </View>
-        <View style={[styles.prefRow, {borderTopWidth:1, borderTopColor:COLORS.border}]}>
+        <View style={[styles.prefRow, {borderTopWidth:1, borderTopColor:colors.border}]}>
           <View>
             <Text style={styles.prefLabel}>Phone notifications</Text>
             <Text style={styles.prefSub}>Push alerts on your device</Text>
@@ -58,8 +61,8 @@ export default function NotificationsScreen({bills=[]}){
           <Switch
             value={phone}
             onValueChange={setPhone}
-            trackColor={{false:COLORS.border, true:COLORS.primary}}
-            thumbColor={COLORS.white}
+            trackColor={{false:colors.border, true:colors.primary}}
+            thumbColor={colors.white}
           />
         </View>
       </View>
@@ -81,7 +84,7 @@ export default function NotificationsScreen({bills=[]}){
         </View>
       ) : (
         notes.map((n, i) => (
-          <View key={n.id || i} style={[styles.noteCard, {backgroundColor: typeColor[n.type] || COLORS.white, borderColor: typeBorder[n.type] || COLORS.border}]}>
+          <View key={n.id || i} style={[styles.noteCard, {backgroundColor: typeColor[n.type] || colors.white, borderColor: typeBorder[n.type] || colors.border}]}>
             <Text style={styles.noteIcon}>{typeIcon[n.type] || '🔔'}</Text>
             <Text style={styles.noteText}>{n.text}</Text>
           </View>
@@ -91,45 +94,45 @@ export default function NotificationsScreen({bills=[]}){
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:60},
 
   headerRow:{flexDirection:'row',alignItems:'center',marginBottom:SPACING.md},
-  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text},
   badge:{
-    marginLeft:10,backgroundColor:COLORS.primary,borderRadius:12,
+    marginLeft:10,backgroundColor:colors.primary,borderRadius:12,
     paddingHorizontal:8,paddingVertical:2,
   },
-  badgeText:{fontSize:12,fontWeight:'700',fontFamily:'Inter',color:COLORS.white},
+  badgeText:{fontSize:12,fontWeight:'700',fontFamily:'Inter',color:colors.white},
 
   prefCard:{
-    backgroundColor:COLORS.white,
+    backgroundColor:colors.white,
     borderRadius:16,
     borderWidth:1,
-    borderColor:COLORS.border,
+    borderColor:colors.border,
     marginBottom:SPACING.md,
     overflow:'hidden',
     shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.05,shadowRadius:6,elevation:2,
   },
   prefTitle:{
     fontSize:11,fontWeight:'700',fontFamily:'Inter',
-    color:COLORS.textSecondary,letterSpacing:1,textTransform:'uppercase',
+    color:colors.textSecondary,letterSpacing:1,textTransform:'uppercase',
     paddingHorizontal:SPACING.md,paddingTop:SPACING.sm,paddingBottom:4,
   },
   prefRow:{
     flexDirection:'row',alignItems:'center',justifyContent:'space-between',
     paddingHorizontal:SPACING.md,paddingVertical:14,
   },
-  prefLabel:{fontSize:15,fontWeight:'500',fontFamily:'Inter',color:COLORS.text},
-  prefSub:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+  prefLabel:{fontSize:15,fontWeight:'500',fontFamily:'Inter',color:colors.text},
+  prefSub:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
 
   listHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:SPACING.sm},
-  listTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:COLORS.text},
-  markRead:{fontSize:13,fontFamily:'Inter',color:COLORS.primary,fontWeight:'600'},
+  listTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  markRead:{fontSize:13,fontFamily:'Inter',color:colors.primary,fontWeight:'600'},
 
-  emptyCard:{backgroundColor:COLORS.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:COLORS.border,alignItems:'center'},
-  emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:COLORS.text,marginBottom:4},
-  emptyBody:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary},
+  emptyCard:{backgroundColor:colors.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:colors.border,alignItems:'center'},
+  emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text,marginBottom:4},
+  emptyBody:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary},
 
   noteCard:{
     flexDirection:'row',alignItems:'flex-start',
@@ -137,6 +140,6 @@ const styles = StyleSheet.create({
     marginBottom:8,borderWidth:1,
   },
   noteIcon:{fontSize:18,marginRight:10,marginTop:1},
-  noteText:{flex:1,fontSize:14,fontFamily:'Inter',color:COLORS.text,lineHeight:20},
+  noteText:{flex:1,fontSize:14,fontFamily:'Inter',color:colors.text,lineHeight:20},
 });
 

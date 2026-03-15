@@ -2,9 +2,12 @@ import React from 'react';
 import {ScrollView, View, Text, StyleSheet} from 'react-native';
 import ProgressBar from '../components/ProgressBar';
 
-import common, {SPACING, COLORS} from '../styles/common';
+import common, {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 
-export default function SavingsBreakdownScreen({bills=[], transactions=[]}){
+export default function SavingsBreakdownScreen({bills = [], transactions = []}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
   const totalSaved  = bills.reduce((s, b) => s + (b.saved || 0), 0);
   const totalTarget = bills.reduce((s, b) => s + (b.amount || 0), 0);
   const totalPct    = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
@@ -84,51 +87,51 @@ export default function SavingsBreakdownScreen({bills=[], transactions=[]}){
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:60},
-  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:COLORS.text,marginBottom:SPACING.md},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:SPACING.md},
 
   heroCard:{
-    backgroundColor:COLORS.primary,
+    backgroundColor:colors.primary,
     borderRadius:18,padding:SPACING.lg,marginBottom:SPACING.md,
     shadowColor:'#000',shadowOffset:{width:0,height:4},shadowOpacity:0.15,shadowRadius:12,elevation:4,
   },
-  heroLabel:{fontSize:12,fontWeight:'600',fontFamily:'Inter',color:'rgba(255,255,255,0.7)',letterSpacing:1,textTransform:'uppercase',marginBottom:4},
-  heroAmount:{fontSize:40,fontWeight:'800',fontFamily:'Inter',color:'#fff',marginBottom:2},
-  heroSub:{fontSize:13,fontFamily:'Inter',color:'rgba(255,255,255,0.7)',marginBottom:SPACING.md},
-  heroBarTrack:{height:6,backgroundColor:'rgba(255,255,255,0.25)',borderRadius:4,overflow:'hidden'},
-  heroBarFill:{height:6,backgroundColor:'#fff',borderRadius:4},
+  heroLabel:{fontSize:12,fontWeight:'600',fontFamily:'Inter',color:colors.onPrimaryMuted,letterSpacing:1,textTransform:'uppercase',marginBottom:4},
+  heroAmount:{fontSize:40,fontWeight:'800',fontFamily:'Inter',color:colors.onPrimary,marginBottom:2},
+  heroSub:{fontSize:13,fontFamily:'Inter',color:colors.onPrimaryMuted,marginBottom:SPACING.md},
+  heroBarTrack:{height:6,backgroundColor:colors.onPrimaryMuted,borderRadius:4,overflow:'hidden'},
+  heroBarFill:{height:6,backgroundColor:colors.onPrimary,borderRadius:4},
 
-  emptyCard:{backgroundColor:COLORS.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:COLORS.border,alignItems:'center'},
-  emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:COLORS.text,marginBottom:4},
-  emptyBody:{fontSize:14,fontFamily:'Inter',color:COLORS.textSecondary,textAlign:'center'},
+  emptyCard:{backgroundColor:colors.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:colors.border,alignItems:'center'},
+  emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text,marginBottom:4},
+  emptyBody:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary,textAlign:'center'},
 
   billCard:{
-    backgroundColor:COLORS.white,
+    backgroundColor:colors.white,
     borderRadius:16,padding:SPACING.md,marginBottom:SPACING.md,
-    borderWidth:1,borderColor:COLORS.border,
+    borderWidth:1,borderColor:colors.border,
     shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.05,shadowRadius:6,elevation:2,
   },
   billHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',marginBottom:SPACING.sm},
-  billName:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:COLORS.text},
-  billFreq:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:2},
+  billName:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  billFreq:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
   billAmountCol:{alignItems:'flex-end'},
-  billSaved:{fontSize:20,fontWeight:'800',fontFamily:'Inter',color:COLORS.primary},
-  billTarget:{fontSize:12,fontFamily:'Inter',color:COLORS.textSecondary},
+  billSaved:{fontSize:20,fontWeight:'800',fontFamily:'Inter',color:colors.primary},
+  billTarget:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary},
 
   progressWrap:{marginBottom:SPACING.sm},
   progressMeta:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:4},
-  progressPct:{fontSize:11,fontFamily:'Inter',color:COLORS.textSecondary},
-  progressRem:{fontSize:11,fontFamily:'Inter',color:COLORS.textSecondary},
-  fullPill:{backgroundColor:COLORS.successBg,borderRadius:20,paddingHorizontal:8,paddingVertical:2,borderWidth:1,borderColor:COLORS.successBorder},
-  fullPillText:{fontSize:11,fontWeight:'600',fontFamily:'Inter',color:COLORS.successText},
+  progressPct:{fontSize:11,fontFamily:'Inter',color:colors.textSecondary},
+  progressRem:{fontSize:11,fontFamily:'Inter',color:colors.textSecondary},
+  fullPill:{backgroundColor:colors.successBg,borderRadius:20,paddingHorizontal:8,paddingVertical:2,borderWidth:1,borderColor:colors.successBorder},
+  fullPillText:{fontSize:11,fontWeight:'600',fontFamily:'Inter',color:colors.successText},
 
-  txSection:{borderTopWidth:1,borderTopColor:COLORS.border,paddingTop:SPACING.sm},
-  txHeader:{fontSize:11,fontWeight:'700',fontFamily:'Inter',color:COLORS.textSecondary,letterSpacing:0.5,textTransform:'uppercase',marginBottom:6},
+  txSection:{borderTopWidth:1,borderTopColor:colors.border,paddingTop:SPACING.sm},
+  txHeader:{fontSize:11,fontWeight:'700',fontFamily:'Inter',color:colors.textSecondary,letterSpacing:0.5,textTransform:'uppercase',marginBottom:6},
   txRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',paddingVertical:5},
   txLeft:{flex:1},
-  txDate:{fontSize:12,fontWeight:'600',fontFamily:'Inter',color:COLORS.text},
-  txNote:{fontSize:11,fontFamily:'Inter',color:COLORS.textSecondary,marginTop:1},
-  txAmount:{fontSize:13,fontWeight:'700',fontFamily:'Inter',color:COLORS.primary},
+  txDate:{fontSize:12,fontWeight:'600',fontFamily:'Inter',color:colors.text},
+  txNote:{fontSize:11,fontFamily:'Inter',color:colors.textSecondary,marginTop:1},
+  txAmount:{fontSize:13,fontWeight:'700',fontFamily:'Inter',color:colors.primary},
 });
 
