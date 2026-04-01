@@ -1,4 +1,8 @@
 const {Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode} = require('plaid');
+const {jsonResponse} = require('./_lib/http');
+const {requireEnv} = require('./_lib/env');
+const logger = require('./_lib/logger');
+const {allowRequest, getClientKey} = require('./_lib/rateLimit');
 
 const POPULAR_BANKS = [
   {id: 'fallback_chase', name: 'Chase', url: 'https://www.chase.com', login_url: 'https://secure.chase.com/web/auth/dashboard'},
@@ -23,8 +27,8 @@ const LOGIN_URL_HINTS = {
 };
 
 function getPlaidClient() {
-  const clientId = process.env.PLAID_CLIENT_ID;
-  const secret = process.env.PLAID_SECRET;
+  const clientId = requireEnv('PLAID_CLIENT_ID');
+  const secret = requireEnv('PLAID_SECRET');
   const envName = (process.env.PLAID_ENV || 'sandbox').toLowerCase();
   const environment = PlaidEnvironments[envName] || PlaidEnvironments.sandbox;
 
@@ -144,10 +148,13 @@ function resolveLoginUrl(inst) {
 
 exports.handler = async function handler(event) {
   if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({error: 'Method not allowed'}),
-    };
+    return jsonResponse(405, {error: 'Method not allowed'});
+  }
+
+  const clientKey = getClientKey(event);
+  const limiter = allowRequest(`search-institutions:${clientKey}`, 45, 60000);
+  if (!limiter.allowed) {
+    return jsonResponse(429, {error: 'Too many requests. Please try again soon.'});
   }
 
   try {
@@ -155,10 +162,7 @@ exports.handler = async function handler(event) {
 
     const hasPlaidCreds = !!(process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET);
     if (!hasPlaidCreds) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({institutions: buildFallbackResults(query)}),
-      };
+      return jsonResponse(200, {institutions: buildFallbackResults(query)});
     }
 
     const plaidClient = getPlaidClient();
@@ -179,15 +183,11 @@ exports.handler = async function handler(event) {
     const fallbackInstitutions = buildFallbackResults(query);
     const institutions = dedupeByName([...liveInstitutions, ...fallbackInstitutions]).slice(0, 15);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({institutions}),
-    };
+    return jsonResponse(200, {institutions});
   } catch (error) {
-    console.error('plaid-search-institutions failed', error.response?.data || error.message);
-    return {
-      statusCode: 200,
-      body: JSON.stringify({institutions: buildFallbackResults((event.queryStringParameters?.q || '').trim())}),
-    };
+    logger.error('plaid-search-institutions failed', {
+      error: error.response?.data || error.message,
+    });
+    return jsonResponse(200, {institutions: buildFallbackResults((event.queryStringParameters?.q || '').trim())});
   }
 };

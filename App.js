@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import React, {useEffect, useMemo, useState} from 'react';
+import {ActivityIndicator, Text} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
@@ -24,6 +25,15 @@ import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import BrandLogo from './components/BrandLogo';
 import {BRANDING} from './assets/branding';
 import {ThemeProvider, buildNavigationTheme} from './theme/ThemeContext';
+import {
+  isSupabaseConfigured,
+  getCurrentSession,
+  subscribeToAuthChanges,
+  signUpWithEmail,
+  signInWithEmail,
+  signOutUser,
+} from './services/supabase';
+import {loadUserAppState, saveUserAppState} from './services/userDataApi';
 
 const Stack = createStackNavigator();
 const Tabs = createBottomTabNavigator();
@@ -44,6 +54,45 @@ export default function App(){
   });
   const [isHydrated, setIsHydrated] = useState(false);
   const [themeMode, setThemeMode] = useState('light');
+  const [session, setSession] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [backendReady, setBackendReady] = useState(false);
+  const [authError, setAuthError] = useState('');
+
+  const hasSupabase = isSupabaseConfigured();
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function bootstrapAuth() {
+      if (!hasSupabase) {
+        if (mounted) setAuthReady(true);
+        return;
+      }
+
+      const {session: currentSession, error} = await getCurrentSession();
+      if (!mounted) return;
+      if (error) {
+        console.warn('Failed to load auth session', error.message);
+      }
+      setSession(currentSession || null);
+      setAuthReady(true);
+    }
+
+    bootstrapAuth();
+
+    const subscription = subscribeToAuthChanges((nextSession) => {
+      if (!mounted) return;
+      setSession(nextSession || null);
+      setBackendReady(false);
+      setAuthError('');
+    });
+
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe && subscription.unsubscribe();
+    };
+  }, [hasSupabase]);
 
   useEffect(() => {
     async function hydrateState() {
@@ -72,18 +121,123 @@ export default function App(){
 
   useEffect(() => {
     if (!isHydrated) return;
+    if (!authReady) return;
 
-    AsyncStorage.setItem(
-      APP_STATE_KEY,
-      JSON.stringify({bills, transactions, autoSave, themeMode}),
-    ).catch((err) => {
-      console.warn('Failed to persist app state', err);
-    });
-  }, [isHydrated, bills, transactions, autoSave, themeMode]);
+    let cancelled = false;
+
+    async function persistState() {
+      const payload = {bills, transactions, autoSave, themeMode};
+
+      AsyncStorage.setItem(APP_STATE_KEY, JSON.stringify(payload)).catch((err) => {
+        console.warn('Failed to persist app state', err);
+      });
+
+      if (session?.access_token && backendReady) {
+        try {
+          await saveUserAppState(session.access_token, payload);
+        } catch (err) {
+          if (!cancelled) {
+            console.warn('Failed to sync user state to backend', err.message);
+          }
+        }
+      }
+    }
+
+    persistState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isHydrated, authReady, backendReady, bills, transactions, autoSave, themeMode, session]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrateFromBackend() {
+      if (!authReady || !isHydrated) return;
+
+      if (!session?.access_token) {
+        if (!cancelled) setBackendReady(true);
+        return;
+      }
+
+      try {
+        const remoteState = await loadUserAppState(session.access_token);
+        if (cancelled) return;
+
+        if (remoteState && typeof remoteState === 'object') {
+          if (Array.isArray(remoteState.bills)) setBills(remoteState.bills);
+          if (Array.isArray(remoteState.transactions)) setTransactions(remoteState.transactions);
+          if (remoteState.autoSave && typeof remoteState.autoSave === 'object') {
+            setAutoSave((prev) => ({...prev, ...remoteState.autoSave}));
+          }
+          if (remoteState.themeMode === 'dark' || remoteState.themeMode === 'light') {
+            setThemeMode(remoteState.themeMode);
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.warn('Failed to hydrate user state from backend', err.message);
+        }
+      } finally {
+        if (!cancelled) setBackendReady(true);
+      }
+    }
+
+    hydrateFromBackend();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, isHydrated, session]);
+
+  async function handleSignUp(email, password) {
+    try {
+      setAuthError('');
+      await signUpWithEmail(email, password);
+      return {ok: true};
+    } catch (err) {
+      const message = err?.message || 'Unable to create account.';
+      setAuthError(message);
+      return {ok: false, error: message};
+    }
+  }
+
+  async function handleSignIn(email, password) {
+    try {
+      setAuthError('');
+      await signInWithEmail(email, password);
+      return {ok: true};
+    } catch (err) {
+      const message = err?.message || 'Unable to sign in.';
+      setAuthError(message);
+      return {ok: false, error: message};
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await signOutUser();
+    } catch (err) {
+      console.warn('Failed to sign out', err.message);
+    }
+  }
 
   const navTheme = useMemo(() => buildNavigationTheme(themeMode), [themeMode]);
   const isDark = themeMode === 'dark';
   const shellBg = isDark ? '#0F1412' : '#F5EEE3';
+  const initialRouteName = session ? 'Main' : 'Welcome';
+
+  if (!authReady) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={{flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: shellBg}}>
+          <ActivityIndicator size="large" color={isDark ? '#6FD09A' : '#0B4226'} />
+          <Text style={{marginTop: 12, color: isDark ? '#E8F3ED' : '#0B4226'}}>Loading your workspace...</Text>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
 
   function updateAutoSave(config){ setAutoSave(config); }
 
@@ -153,7 +307,7 @@ export default function App(){
         <Tabs.Screen name="Calendar">{props => <CalendarScreen {...props} bills={enrichedBills} />}</Tabs.Screen>
         <Tabs.Screen name="Bank" component={BankConnectScreen} />
         <Tabs.Screen name="Settings">
-          {props => <SettingsScreen {...props} themeMode={themeMode} onThemeModeChange={setThemeMode} />}
+          {props => <SettingsScreen {...props} themeMode={themeMode} onThemeModeChange={setThemeMode} onSignOut={handleSignOut} />}
         </Tabs.Screen>
       </Tabs.Navigator>
     );
@@ -165,6 +319,8 @@ export default function App(){
       <SafeAreaView style={{flex:1, backgroundColor: shellBg}}>
         <NavigationContainer theme={navTheme}>
           <Stack.Navigator
+            key={initialRouteName}
+            initialRouteName={initialRouteName}
             screenOptions={{
               headerTitle: () => (
                 <BrandLogo
@@ -180,7 +336,15 @@ export default function App(){
             }}
           >
           <Stack.Screen name="Welcome" component={WelcomeScreen} options={{headerShown:false}} />
-          <Stack.Screen name="Signup" component={SignupScreen} options={{title:'Create Your Account'}} />
+          <Stack.Screen name="Signup" options={{title:'Create Your Account'}}>
+            {props => <SignupScreen
+              {...props}
+              onSignUp={handleSignUp}
+              onSignIn={handleSignIn}
+              hasSupabase={hasSupabase}
+              authError={authError}
+            />}
+          </Stack.Screen>
           <Stack.Screen name="BankConnect" component={BankConnectScreen} options={{title:'Connect Your Bank'}} />
 
           <Stack.Screen name="Main" component={MainTabs} options={{headerShown:false}} />

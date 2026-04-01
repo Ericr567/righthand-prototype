@@ -36,13 +36,33 @@ Set these Netlify environment variables before deploying:
 - `PLAID_PRODUCTS` (optional, default: `auth,transactions`)
 - `PLAID_COUNTRY_CODES` (optional, default: `US`)
 - `PLAID_REDIRECT_URI` (optional, required for some OAuth institutions)
+- `PLAID_WEBHOOK_SECRET` (optional, recommended to authorize inbound webhooks)
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 
 Serverless endpoints added:
 
 - `/.netlify/functions/plaid-create-link-token`
 - `/.netlify/functions/plaid-exchange-public-token`
+- `/.netlify/functions/plaid-search-institutions`
+- `/.netlify/functions/plaid-webhook`
+- `/.netlify/functions/user-data-get`
+- `/.netlify/functions/user-data-save`
 
 The exchange function now persists encrypted `access_token` + `item_id` into Netlify Blobs (`plaid-items` store) and returns only a safe confirmation payload.
+
+Security hardening included:
+
+- request body validation for Plaid function endpoints,
+- lightweight request rate limiting,
+- structured server logs with sensitive token redaction.
+
+Auth and user-scoped data included:
+
+- Supabase email/password auth wiring in app root and signup flow.
+- Authenticated per-user app-state sync to Netlify Blobs (`user-app-state`).
 
 ### Local environment setup
 
@@ -59,6 +79,27 @@ If you run through Netlify local dev, these values are used by Netlify Functions
 ### Netlify production setup
 
 Add the same variables in Netlify Site Settings -> Environment Variables, then redeploy.
+
+### Supabase setup notes
+
+1. Create a Supabase project.
+2. Copy project URL and anon key into both server and public env vars.
+3. Ensure your Supabase Auth provider has Email enabled.
+4. Redeploy after setting env values.
+
+### Tests and CI
+
+Run unit tests:
+
+```bash
+npm run test
+```
+
+GitHub Actions CI now runs:
+
+- dependency install,
+- unit tests,
+- web build export.
 
 ---
 

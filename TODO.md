@@ -9,6 +9,10 @@
 - Reworked Bank connection flow to searchable dropdown with institution login-page links.
 - Added accessibility improvements including progress semantics and richer labels/hints on key bill details interactions.
 - Added dashboard enhancements: certainty score, miss-risk alerts, and paycheck allocation preview.
+- Added structured logging + request validation + basic rate limiting for Plaid Netlify functions.
+- Added Plaid webhook intake endpoint with optional webhook secret validation and event persistence.
+- Added centralized frontend API service for Plaid requests.
+- Added unit tests for bill-planning logic and GitHub Actions CI for test/build checks.
 
 ## UI/Navigation placeholders
 
@@ -32,9 +36,16 @@
 
 ## General TODOs
 
-- Add unit/component tests
+- Expand unit/component tests (beyond bill planner logic)
 - Expand accessibility audit and fix remaining edge cases
 - Add analytics / crash reporting
-- Build API service layer and secure storage
+- Complete user-authenticated API service layer and user-scoped secure storage
+
+## Priority Next Build Items
+
+- Implement real authentication/authorization and user session handling.
+- Add secure token retrieval/decryption path for Plaid item operations.
+- Add Plaid webhook processing jobs (transactions sync and item-health updates).
+- Add persistent backend data model for bills, transactions, notifications.
 
 This list is a living document—add items as new gaps are identified.

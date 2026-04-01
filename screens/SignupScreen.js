@@ -7,7 +7,7 @@ import BrandLogo from '../components/BrandLogo';
 import {BRANDING} from '../assets/branding';
 import {useAppTheme} from '../theme/ThemeContext';
 
-export default function SignupScreen({navigation}){
+export default function SignupScreen({navigation, onSignUp, onSignIn, hasSupabase = false, authError = ''}){
   const {colors} = useAppTheme();
   const styles = createStyles(colors);
   const [mode, setMode] = useState('signup');
@@ -15,8 +15,9 @@ export default function SignupScreen({navigation}){
   const [pw,setPw]=useState('');
   const [pw2,setPw2]=useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleCreateAccount() {
+  async function handleCreateAccount() {
     if (!email || !pw || !pw2) {
       setError('Please fill out all fields.');
       return;
@@ -25,16 +26,44 @@ export default function SignupScreen({navigation}){
       setError('Passwords do not match.');
       return;
     }
+
+    if (!hasSupabase) {
+      setError('Auth is not configured yet. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.');
+      return;
+    }
+
+    setSubmitting(true);
     setError('');
+    const result = await onSignUp?.(email.trim(), pw);
+    setSubmitting(false);
+    if (!result?.ok) {
+      setError(result?.error || authError || 'Unable to create account.');
+      return;
+    }
+
     navigation.navigate('BankConnect');
   }
 
-  function handleSignIn() {
+  async function handleSignIn() {
     if (!email || !pw) {
       setError('Please enter your email and password.');
       return;
     }
+
+    if (!hasSupabase) {
+      setError('Auth is not configured yet. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.');
+      return;
+    }
+
+    setSubmitting(true);
     setError('');
+    const result = await onSignIn?.(email.trim(), pw);
+    setSubmitting(false);
+    if (!result?.ok) {
+      setError(result?.error || authError || 'Unable to sign in.');
+      return;
+    }
+
     navigation.replace('Main');
   }
 
@@ -133,6 +162,8 @@ export default function SignupScreen({navigation}){
           title={mode === 'signin' ? 'Sign In' : 'Create Account'}
           onPress={mode === 'signin' ? handleSignIn : handleCreateAccount}
           style={styles.button}
+          disabled={submitting}
+          loading={submitting}
         />
       </View>
 

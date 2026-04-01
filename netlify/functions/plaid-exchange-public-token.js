@@ -1,10 +1,14 @@
 const crypto = require('crypto');
 const {getStore} = require('@netlify/blobs');
 const {Configuration, PlaidApi, PlaidEnvironments} = require('plaid');
+const {jsonResponse, parseJsonBody} = require('./_lib/http');
+const {requireEnv} = require('./_lib/env');
+const logger = require('./_lib/logger');
+const {allowRequest, getClientKey} = require('./_lib/rateLimit');
 
 function getPlaidClient() {
-  const clientId = process.env.PLAID_CLIENT_ID;
-  const secret = process.env.PLAID_SECRET;
+  const clientId = requireEnv('PLAID_CLIENT_ID');
+  const secret = requireEnv('PLAID_SECRET');
   const envName = (process.env.PLAID_ENV || 'sandbox').toLowerCase();
   const environment = PlaidEnvironments[envName] || PlaidEnvironments.sandbox;
 
@@ -26,10 +30,7 @@ function getPlaidClient() {
 }
 
 function getEncryptionKey() {
-  const raw = process.env.PLAID_TOKEN_ENCRYPTION_KEY;
-  if (!raw) {
-    throw new Error('Missing PLAID_TOKEN_ENCRYPTION_KEY');
-  }
+  const raw = requireEnv('PLAID_TOKEN_ENCRYPTION_KEY');
 
   const key = Buffer.from(raw, 'base64');
   if (key.length !== 32) {
@@ -64,15 +65,18 @@ async function persistItemSecret(record) {
 
 exports.handler = async function handler(event) {
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({error: 'Method not allowed'}),
-    };
+    return jsonResponse(405, {error: 'Method not allowed'});
+  }
+
+  const clientKey = getClientKey(event);
+  const limiter = allowRequest(`exchange-public-token:${clientKey}`, 20, 60000);
+  if (!limiter.allowed) {
+    return jsonResponse(429, {error: 'Too many requests. Please try again soon.'});
   }
 
   try {
     const plaidClient = getPlaidClient();
-    const body = event.body ? JSON.parse(event.body) : {};
+    const body = parseJsonBody(event);
     const publicToken = body.publicToken;
     const institutionName = body.institutionName || null;
 
@@ -104,27 +108,28 @@ exports.handler = async function handler(event) {
       updatedAt: nowIso,
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        ok: true,
-        institutionName,
-        itemId,
-      }),
-    };
+    logger.info('Exchanged Plaid public token', {itemId, institutionName});
+
+    return jsonResponse(200, {
+      ok: true,
+      institutionName,
+      itemId,
+    });
   } catch (error) {
-    console.error('plaid-exchange-public-token failed', error.response?.data || error.message);
+    logger.error('plaid-exchange-public-token failed', {
+      error: error.response?.data || error.message,
+    });
     const message = typeof error.message === 'string' ? error.message : '';
     const isConfigError =
       message.startsWith('Missing PLAID_') ||
       message.includes('PLAID_TOKEN_ENCRYPTION_KEY must decode to 32 bytes');
-    const statusCode = isConfigError ? 400 : 500;
+    const isInputError = error.statusCode === 400;
+    const statusCode = isConfigError || isInputError ? 400 : 500;
     const safeError = isConfigError
       ? `${message}. Verify local .env and Netlify environment variables.`
-      : 'Failed to exchange public token';
-    return {
-      statusCode,
-      body: JSON.stringify({error: safeError}),
-    };
+      : isInputError
+        ? message
+        : 'Failed to exchange public token';
+    return jsonResponse(statusCode, {error: safeError});
   }
 };

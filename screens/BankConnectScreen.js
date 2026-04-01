@@ -3,6 +3,11 @@ import {View, Text, TouchableOpacity, StyleSheet, TextInput, Platform, ActivityI
 
 import {SPACING} from '../styles/common';
 import {useAppTheme} from '../theme/ThemeContext';
+import {
+  searchInstitutions as searchInstitutionsApi,
+  createLinkToken as createLinkTokenApi,
+  exchangePublicToken as exchangePublicTokenApi,
+} from '../services/api';
 
 export default function BankConnectScreen({navigation}) {
   const {colors} = useAppTheme();
@@ -494,15 +499,7 @@ function ensurePlaidScript() {
 }
 
 async function searchInstitutions(query) {
-  const q = (query || '').trim();
-  const endpoint = q
-    ? `/.netlify/functions/plaid-search-institutions?q=${encodeURIComponent(q)}`
-    : '/.netlify/functions/plaid-search-institutions';
-  const {res, data} = await fetchJson(endpoint);
-  if (!res.ok || !Array.isArray(data.institutions)) {
-    throw new Error(data.error || 'Unable to search institutions.');
-  }
-  return data.institutions;
+  return searchInstitutionsApi(query);
 }
 
 function normalizeUrl(raw) {
@@ -522,44 +519,9 @@ function formatDomain(raw) {
 }
 
 async function createLinkToken() {
-  const {res, data} = await fetchJson('/.netlify/functions/plaid-create-link-token', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({userId: `user-${Date.now()}`}),
-  });
-  if (!res.ok || !data.link_token) {
-    throw new Error(data.error || 'Unable to create Plaid link token.');
-  }
-  return data.link_token;
+  return createLinkTokenApi();
 }
 
 async function exchangePublicToken(publicToken, institutionName) {
-  const {res, data} = await fetchJson('/.netlify/functions/plaid-exchange-public-token', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({publicToken, institutionName}),
-  });
-  if (!res.ok || !data.ok) {
-    throw new Error(data.error || 'Unable to exchange Plaid token.');
-  }
-  return data;
-}
-
-async function fetchJson(url, options) {
-  let res;
-  try {
-    res = await fetch(url, options);
-  } catch {
-    throw new Error('Unable to reach backend. Start with "npx netlify dev" and try again.');
-  }
-
-  const text = await res.text();
-  let data;
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    throw new Error('Backend returned an invalid response. Run using "npx netlify dev".');
-  }
-
-  return {res, data};
+  return exchangePublicTokenApi(publicToken, institutionName);
 }

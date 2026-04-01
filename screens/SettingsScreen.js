@@ -24,7 +24,7 @@ function SectionCard({title, children, styles}){
   );
 }
 
-export default function SettingsScreen({navigation, themeMode = 'light', onThemeModeChange}){
+export default function SettingsScreen({navigation, themeMode = 'light', onThemeModeChange, onSignOut}){
   const {colors, isDark} = useAppTheme();
   const styles = createStyles(colors);
 
@@ -97,7 +97,15 @@ export default function SettingsScreen({navigation, themeMode = 'light', onTheme
         <SettingsRow label="Contact Us" subtitle="Send product feedback and support requests" onPress={() => {}} styles={styles} />
       </SectionCard>
 
-      <TouchableOpacity style={styles.logout} onPress={() => navigation.replace('Welcome')}>
+      <TouchableOpacity
+        style={styles.logout}
+        onPress={async () => {
+          if (onSignOut) {
+            await onSignOut();
+          }
+          navigation.replace('Welcome');
+        }}
+      >
         <Text style={styles.logoutText}>Log Out</Text>
       </TouchableOpacity>
     </ScrollView>
