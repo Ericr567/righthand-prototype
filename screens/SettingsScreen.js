@@ -29,6 +29,17 @@ export default function SettingsScreen({navigation, themeMode = 'light', onTheme
   const {colors, isDark} = useAppTheme();
   const styles = createStyles(colors);
 
+  function openBankAccounts() {
+    // Prefer switching to the Bank tab from Settings.
+    const parent = navigation.getParent?.();
+    if (parent?.navigate) {
+      parent.navigate('Bank');
+      return;
+    }
+
+    navigation.navigate('BankConnect');
+  }
+
   return (
     <ScrollView style={[common.screen, {backgroundColor: colors.background}]} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.screenTitle}>Settings</Text>
@@ -54,11 +65,11 @@ export default function SettingsScreen({navigation, themeMode = 'light', onTheme
 
       <SectionCard title="Account" styles={styles}>
         <SettingsRow label="Profile" onPress={() => navigation.navigate('Profile')} styles={styles} />
-        <SettingsRow label="Bank Accounts" subtitle="Connect and manage linked institutions" onPress={() => navigation.navigate('BankConnect')} styles={styles} />
+        <SettingsRow label="Bank Accounts" subtitle="Connect and manage linked institutions" onPress={openBankAccounts} styles={styles} />
         <View style={styles.bankActionsWrap}>
           <PrimaryButton
             title="Connect Bank with Plaid"
-            onPress={() => navigation.navigate('BankConnect')}
+            onPress={openBankAccounts}
             accessibilityLabel="Connect bank with Plaid"
           />
         </View>
