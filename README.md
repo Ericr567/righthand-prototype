@@ -39,6 +39,7 @@ Set these Netlify environment variables before deploying:
 - `PLAID_WEBHOOK_SECRET` (optional, recommended to authorize inbound webhooks)
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (recommended for backend verification)
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 
@@ -57,7 +58,9 @@ Security hardening included:
 
 - request body validation for Plaid function endpoints,
 - lightweight request rate limiting,
-- structured server logs with sensitive token redaction.
+- structured server logs with sensitive token redaction,
+- request ID propagation (`X-Request-Id`) across function responses,
+- Plaid webhook idempotency and event-class processing buckets.
 
 Auth and user-scoped data included:
 
@@ -98,8 +101,25 @@ npm run test
 GitHub Actions CI now runs:
 
 - dependency install,
+- client-secret leakage check,
+- production dependency audit,
 - unit tests,
 - web build export.
+
+Run security checks locally:
+
+```bash
+npm run security:client-secrets
+npm run security:audit
+```
+
+### Release flow
+
+1. Set all required env vars in Netlify for both production and deploy previews.
+2. Run `npm run security:client-secrets && npm run test && npm run build:web`.
+3. Verify auth + bank-connect smoke tests in deploy preview.
+4. Promote to production only after preview verification.
+5. Roll back by redeploying the previous successful production deploy in Netlify.
 
 ---
 

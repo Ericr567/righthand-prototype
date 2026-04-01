@@ -1,8 +1,9 @@
 const {Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode} = require('plaid');
-const {jsonResponse, parseJsonBody} = require('./_lib/http');
+const {jsonResponse, parseJsonBody, getRequestId} = require('./_lib/http');
 const {requireEnv} = require('./_lib/env');
 const logger = require('./_lib/logger');
 const {allowRequest, getClientKey} = require('./_lib/rateLimit');
+const {assertAllowedFields, optionalString} = require('./_lib/validation');
 
 function getPlaidClient() {
   const clientId = requireEnv('PLAID_CLIENT_ID');
@@ -44,20 +45,32 @@ function parseCountryCodes(raw) {
 }
 
 exports.handler = async function handler(event) {
+  const requestId = getRequestId(event);
+
   if (event.httpMethod !== 'POST') {
-    return jsonResponse(405, {error: 'Method not allowed'});
+    return jsonResponse(405, {error: 'Method not allowed'}, event);
   }
 
   const clientKey = getClientKey(event);
   const limiter = allowRequest(`create-link-token:${clientKey}`, 20, 60000);
   if (!limiter.allowed) {
-    return jsonResponse(429, {error: 'Too many requests. Please try again soon.'});
+    return jsonResponse(
+      429,
+      {error: 'Too many requests. Please try again soon.'},
+      event,
+      {
+        'X-RateLimit-Limit': '20',
+        'X-RateLimit-Remaining': String(limiter.remaining),
+        'X-RateLimit-Reset': String(limiter.resetAt),
+      }
+    );
   }
 
   try {
     const plaidClient = getPlaidClient();
     const body = parseJsonBody(event);
-    const userId = body.userId || `user-${Date.now()}`;
+    assertAllowedFields(body, ['userId']);
+    const userId = optionalString(body.userId, 'userId', 128) || `user-${Date.now()}`;
 
     const request = {
       user: {client_user_id: userId},
@@ -72,11 +85,12 @@ exports.handler = async function handler(event) {
     }
 
     const response = await plaidClient.linkTokenCreate(request);
-    logger.info('Created Plaid link token', {userId});
-    return jsonResponse(200, {link_token: response.data.link_token});
+    logger.info('Created Plaid link token', {userId, requestId});
+    return jsonResponse(200, {link_token: response.data.link_token}, event);
   } catch (error) {
     logger.error('plaid-create-link-token failed', {
       error: error.response?.data || error.message,
+      requestId,
     });
     const isConfigError = typeof error.message === 'string' && error.message.startsWith('Missing PLAID_');
     const isInputError = error.statusCode === 400;
@@ -86,6 +100,6 @@ exports.handler = async function handler(event) {
       : isInputError
         ? error.message
         : 'Failed to create link token';
-    return jsonResponse(statusCode, {error: safeError});
+    return jsonResponse(statusCode, {error: safeError}, event);
   }
 };

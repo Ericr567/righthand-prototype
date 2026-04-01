@@ -20,11 +20,12 @@ function allowRequest(key, limit = 30, windowMs = 60000) {
 }
 
 function getClientKey(event) {
-  return (
+  const forwardedFor =
     event.headers?.['x-forwarded-for'] ||
-    event.headers?.['client-ip'] ||
-    'unknown-client'
-  );
+    event.headers?.['X-Forwarded-For'] ||
+    '';
+  const firstIp = String(forwardedFor).split(',')[0].trim();
+  return firstIp || event.headers?.['client-ip'] || event.headers?.['Client-Ip'] || 'unknown-client';
 }
 
 module.exports = {

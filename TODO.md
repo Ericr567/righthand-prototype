@@ -40,12 +40,14 @@
 - Expand accessibility audit and fix remaining edge cases
 - Add analytics / crash reporting
 - Complete user-authenticated API service layer and user-scoped secure storage
+- Add uptime monitor and paging policy for Netlify Functions
+- Add e2e auth + Plaid smoke tests in CI preview pipeline
 
 ## Priority Next Build Items
 
-- Implement real authentication/authorization and user session handling.
 - Add secure token retrieval/decryption path for Plaid item operations.
-- Add Plaid webhook processing jobs (transactions sync and item-health updates).
+- Expand Plaid webhook processors into full sync workers (cursor-based fetch + retries).
 - Add persistent backend data model for bills, transactions, notifications.
+- Add staging and production deployment checklists with ownership sign-off.
 
 This list is a living document—add items as new gaps are identified.

@@ -4,17 +4,17 @@ let supabaseClient = null;
 
 function getSupabaseAdminClient() {
   const url = process.env.SUPABASE_URL;
-  const anon = process.env.SUPABASE_ANON_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-  if (!url || !anon) {
-    const error = new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+  if (!url || !key) {
+    const error = new Error('Missing SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY fallback)');
     error.statusCode = 500;
     throw error;
   }
 
   if (supabaseClient) return supabaseClient;
 
-  supabaseClient = createClient(url, anon, {
+  supabaseClient = createClient(url, key, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,

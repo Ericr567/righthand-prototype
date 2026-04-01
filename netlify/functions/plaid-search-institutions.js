@@ -1,5 +1,5 @@
 const {Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode} = require('plaid');
-const {jsonResponse} = require('./_lib/http');
+const {jsonResponse, getRequestId} = require('./_lib/http');
 const {requireEnv} = require('./_lib/env');
 const logger = require('./_lib/logger');
 const {allowRequest, getClientKey} = require('./_lib/rateLimit');
@@ -147,14 +147,25 @@ function resolveLoginUrl(inst) {
 }
 
 exports.handler = async function handler(event) {
+  const requestId = getRequestId(event);
+
   if (event.httpMethod !== 'GET') {
-    return jsonResponse(405, {error: 'Method not allowed'});
+    return jsonResponse(405, {error: 'Method not allowed'}, event);
   }
 
   const clientKey = getClientKey(event);
   const limiter = allowRequest(`search-institutions:${clientKey}`, 45, 60000);
   if (!limiter.allowed) {
-    return jsonResponse(429, {error: 'Too many requests. Please try again soon.'});
+    return jsonResponse(
+      429,
+      {error: 'Too many requests. Please try again soon.'},
+      event,
+      {
+        'X-RateLimit-Limit': '45',
+        'X-RateLimit-Remaining': String(limiter.remaining),
+        'X-RateLimit-Reset': String(limiter.resetAt),
+      }
+    );
   }
 
   try {
@@ -162,7 +173,7 @@ exports.handler = async function handler(event) {
 
     const hasPlaidCreds = !!(process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET);
     if (!hasPlaidCreds) {
-      return jsonResponse(200, {institutions: buildFallbackResults(query)});
+      return jsonResponse(200, {institutions: buildFallbackResults(query)}, event);
     }
 
     const plaidClient = getPlaidClient();
@@ -183,11 +194,12 @@ exports.handler = async function handler(event) {
     const fallbackInstitutions = buildFallbackResults(query);
     const institutions = dedupeByName([...liveInstitutions, ...fallbackInstitutions]).slice(0, 15);
 
-    return jsonResponse(200, {institutions});
+    return jsonResponse(200, {institutions}, event);
   } catch (error) {
     logger.error('plaid-search-institutions failed', {
       error: error.response?.data || error.message,
+      requestId,
     });
-    return jsonResponse(200, {institutions: buildFallbackResults((event.queryStringParameters?.q || '').trim())});
+    return jsonResponse(200, {institutions: buildFallbackResults((event.queryStringParameters?.q || '').trim())}, event);
   }
 };
