@@ -66,3 +66,26 @@ export async function exchangePublicToken(publicToken, institutionName) {
 
   return data;
 }
+
+export async function getPlaidAccounts(itemId) {
+  const data = await requestJson(
+    `/.netlify/functions/plaid-get-accounts?itemId=${encodeURIComponent(itemId)}`
+  );
+  if (!Array.isArray(data.accounts)) {
+    throw new Error('Unable to fetch accounts.');
+  }
+  return data;
+}
+
+export async function getPlaidTransactions(itemId, startDate, endDate) {
+  const params = new URLSearchParams({itemId});
+  if (startDate) params.set('startDate', startDate);
+  if (endDate) params.set('endDate', endDate);
+  const data = await requestJson(
+    `/.netlify/functions/plaid-get-transactions?${params.toString()}`
+  );
+  if (!Array.isArray(data.transactions)) {
+    throw new Error('Unable to fetch transactions.');
+  }
+  return data;
+}

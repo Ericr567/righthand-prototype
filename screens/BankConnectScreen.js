@@ -1,15 +1,20 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, TextInput, Platform, ActivityIndicator, ScrollView, Linking} from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {SPACING} from '../styles/common';
 import {useAppTheme} from '../theme/ThemeContext';
 import {
   searchInstitutions as searchInstitutionsApi,
   createLinkToken as createLinkTokenApi,
   exchangePublicToken as exchangePublicTokenApi,
+  getPlaidAccounts,
+  getPlaidTransactions,
 } from '../services/api';
 
-export default function BankConnectScreen({navigation}) {
+const PLAID_ITEM_KEY = 'righthand_plaid_item_v1';
+
+export default function BankConnectScreen({navigation, onPlaidConnected}) {
   const {colors} = useAppTheme();
   const styles = createStyles(colors);
   const [query, setQuery] = useState('');
@@ -98,10 +103,43 @@ export default function BankConnectScreen({navigation}) {
         onSuccess: async (publicToken, metadata) => {
           try {
             setStatus('Finalizing bank connection...');
-            await exchangePublicToken(
+            const exchangeResult = await exchangePublicToken(
               publicToken,
               metadata?.institution?.name || selected?.name || null
             );
+
+            // Persist itemId locally so we can re-fetch accounts/transactions later
+            const itemId = exchangeResult.itemId;
+            if (itemId) {
+              await AsyncStorage.setItem(PLAID_ITEM_KEY, JSON.stringify({
+                itemId,
+                institutionName: exchangeResult.institutionName || null,
+                connectedAt: new Date().toISOString(),
+              }));
+            }
+
+            // Fetch accounts and recent transactions
+            let plaidAccounts = [];
+            let plaidTransactions = [];
+            if (itemId) {
+              try {
+                setStatus('Loading your accounts...');
+                const [accData, txData] = await Promise.all([
+                  getPlaidAccounts(itemId),
+                  getPlaidTransactions(itemId),
+                ]);
+                plaidAccounts = accData.accounts;
+                plaidTransactions = txData.transactions;
+              } catch (fetchError) {
+                // Non-fatal — connection still succeeded
+                console.warn('Could not fetch initial Plaid data:', fetchError.message);
+              }
+            }
+
+            if (onPlaidConnected) {
+              onPlaidConnected({itemId, accounts: plaidAccounts, transactions: plaidTransactions});
+            }
+
             setConnecting(false);
             setShowSuccess(true);
             setStatus('');

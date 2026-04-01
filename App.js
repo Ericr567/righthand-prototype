@@ -46,10 +46,13 @@ export const AppStateContext = createContext({
   autoSave: {enabled: false, amountType: 'fixed', amount: 0, frequency: 'Bi-weekly', nextPayDate: ''},
   toggleBillAutoPay: () => {},
   handleSignOut: () => {},
+  plaidAccounts: [],
+  plaidTransactions: [],
+  onPlaidConnected: () => {},
 });
 
 function MainTabs() {
-  const {enrichedBills, autoSave, toggleBillAutoPay, handleSignOut} = useContext(AppStateContext);
+  const {enrichedBills, autoSave, toggleBillAutoPay, handleSignOut, plaidAccounts, plaidTransactions, onPlaidConnected} = useContext(AppStateContext);
   const {isDark, colors, mode, setMode} = useAppTheme();
   const shellBg = colors.background;
 
@@ -83,7 +86,9 @@ function MainTabs() {
       </Tabs.Screen>
       <Tabs.Screen name="Bills">{props => <AutoPayScreen {...props} bills={enrichedBills} onToggleAutoPay={toggleBillAutoPay} />}</Tabs.Screen>
       <Tabs.Screen name="Calendar">{props => <CalendarScreen {...props} bills={enrichedBills} />}</Tabs.Screen>
-      <Tabs.Screen name="Bank" component={BankConnectScreen} />
+      <Tabs.Screen name="Bank">
+        {props => <BankConnectScreen {...props} onPlaidConnected={onPlaidConnected} />}
+      </Tabs.Screen>
       <Tabs.Screen name="Settings">
         {props => <SettingsScreen {...props} themeMode={mode} onThemeModeChange={setMode} onSignOut={handleSignOut} />}
       </Tabs.Screen>
@@ -104,6 +109,8 @@ export default function App(){
     frequency: 'Bi-weekly',
     nextPayDate: '',
   });
+  const [plaidAccounts, setPlaidAccounts] = useState([]);
+  const [plaidTransactions, setPlaidTransactions] = useState([]);
   const [isHydrated, setIsHydrated] = useState(false);
   const [themeMode, setThemeMode] = useState('light');
   const [session, setSession] = useState(null);
@@ -277,7 +284,10 @@ export default function App(){
       setBills([]);
       setTransactions([]);
       setAutoSave({enabled:false, amountType:'fixed', amount:0, frequency:'Bi-weekly', nextPayDate:''});
+      setPlaidAccounts([]);
+      setPlaidTransactions([]);
       AsyncStorage.removeItem(APP_STATE_KEY).catch(() => {});
+      AsyncStorage.removeItem('righthand_plaid_item_v1').catch(() => {});
     }
   }, []);
 
@@ -330,12 +340,20 @@ export default function App(){
     setBills(prev => prev.map(bill => bill.id === id ? {...bill, autoPay: !bill.autoPay} : bill));
   }, []);
 
+  const onPlaidConnected = useCallback(({itemId, accounts, transactions: plaidTxs}) => {
+    if (Array.isArray(accounts)) setPlaidAccounts(accounts);
+    if (Array.isArray(plaidTxs)) setPlaidTransactions(plaidTxs);
+  }, []);
+
   const appStateValue = useMemo(() => ({
     enrichedBills,
     autoSave,
     toggleBillAutoPay,
     handleSignOut,
-  }), [enrichedBills, autoSave, toggleBillAutoPay, handleSignOut]);
+    plaidAccounts,
+    plaidTransactions,
+    onPlaidConnected,
+  }), [enrichedBills, autoSave, toggleBillAutoPay, handleSignOut, plaidAccounts, plaidTransactions, onPlaidConnected]);
 
   return (
     <AppStateContext.Provider value={appStateValue}>
@@ -370,7 +388,9 @@ export default function App(){
               authError={authError}
             />}
           </Stack.Screen>
-          <Stack.Screen name="BankConnect" component={BankConnectScreen} options={{title:'Connect Your Bank'}} />
+          <Stack.Screen name="BankConnect">
+            {props => <BankConnectScreen {...props} onPlaidConnected={onPlaidConnected} />}
+          </Stack.Screen>
 
           <Stack.Screen name="Main" component={MainTabs} options={{headerShown:false}} />
 
