@@ -10,7 +10,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "expo export:web && cp serve.json web-build/serve.json",
-    "serve": "npx serve web-build",
+    "serve": "python3 -m http.server 3000 --directory web-build",
     "test": "node --test tests/**/*.test.js",
     "validate:env": "node scripts/validate-env.js",
     "security:client-secrets": "node scripts/check-client-secrets.js",
