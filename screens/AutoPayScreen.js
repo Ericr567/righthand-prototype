@@ -34,7 +34,12 @@ export default function AutoPayScreen({navigation, bills = [], onToggleAutoPay})
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.screenTitle}>Bills</Text>
+      <Text style={styles.screenTitle}>Bills & Auto-Pay</Text>
+
+      <View style={styles.headerCard}>
+        <Text style={styles.headerTitle}>Stay ahead of due dates</Text>
+        <Text style={styles.headerSub}>Turn on auto-pay for bills you do not want to miss.</Text>
+      </View>
 
       {/* Summary strip */}
       <View style={styles.summaryRow}>
@@ -58,6 +63,9 @@ export default function AutoPayScreen({navigation, bills = [], onToggleAutoPay})
         <View style={styles.emptyCard}>
           <Text style={styles.emptyTitle}>No bills yet</Text>
           <Text style={styles.emptyBody}>Add your first bill to start tracking and saving.</Text>
+          <TouchableOpacity style={styles.emptyAction} onPress={() => navigation.navigate('AddBill')}>
+            <Text style={styles.emptyActionText}>Add First Bill</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -119,6 +127,16 @@ export default function AutoPayScreen({navigation, bills = [], onToggleAutoPay})
 const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:120},
   screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:SPACING.md},
+  headerCard:{
+    backgroundColor:colors.white,
+    borderRadius:14,
+    borderWidth:1,
+    borderColor:colors.border,
+    padding:SPACING.md,
+    marginBottom:SPACING.md,
+  },
+  headerTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  headerSub:{fontSize:13,fontFamily:'Inter',color:colors.textSecondary,marginTop:4},
 
   summaryRow:{
     flexDirection:'row',
@@ -138,6 +156,14 @@ const createStyles = (colors) => StyleSheet.create({
   emptyCard:{backgroundColor:colors.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:colors.border,alignItems:'center',marginBottom:SPACING.md},
   emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text,marginBottom:4},
   emptyBody:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary,textAlign:'center'},
+  emptyAction:{
+    marginTop:10,
+    backgroundColor:colors.primary,
+    borderRadius:10,
+    paddingHorizontal:12,
+    paddingVertical:8,
+  },
+  emptyActionText:{fontSize:12,fontWeight:'700',fontFamily:'Inter',color:colors.onPrimary},
 
   billCard:{
     backgroundColor:colors.white,

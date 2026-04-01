@@ -39,94 +39,173 @@ export default function SignupScreen({navigation}){
   }
 
   return (
-    <ScrollView style={{backgroundColor: colors.background}} contentContainerStyle={[styles.form, common.screen, {backgroundColor: colors.background}]}>
-      <View style={styles.topRow}>
+    <ScrollView
+      style={{backgroundColor: colors.background}}
+      contentContainerStyle={[styles.form, common.screen, {backgroundColor: colors.background}]}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.heroWrap}>
+        <BrandLogo
+          size={64}
+          imageSource={BRANDING.logoSource}
+          imageUri={BRANDING.logoUri}
+        />
+        <Text style={styles.heroMotto}>Welcome to RightHand</Text>
+        <Text style={styles.heroSub}>Set up your account to start tracking bills and automating savings.</Text>
+      </View>
+
+      <View style={styles.modeSwitch}>
         <TouchableOpacity
-          style={styles.signInTab}
+          style={[styles.modePill, mode === 'signup' && styles.modePillActive]}
+          onPress={() => {
+            setMode('signup');
+            setError('');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Create account mode"
+        >
+          <Text style={[styles.modeText, mode === 'signup' && styles.modeTextActive]}>Create Account</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.modePill, mode === 'signin' && styles.modePillActive]}
           onPress={() => {
             setMode('signin');
             setError('');
           }}
           accessibilityRole="button"
-          accessibilityLabel="Sign in"
+          accessibilityLabel="Sign in mode"
         >
-          <Text style={styles.signInTabText}>Sign In</Text>
+          <Text style={[styles.modeText, mode === 'signin' && styles.modeTextActive]}>Sign In</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.heroWrap}>
-        <BrandLogo
-          size={77}
-          imageSource={BRANDING.logoSource}
-          imageUri={BRANDING.logoUri}
+      <View style={styles.formCard}>
+        <Text style={[common.title, styles.formTitle]}>{mode === 'signin' ? 'Sign in to your account' : 'Create your account'}</Text>
+
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          placeholder="name@example.com"
+          placeholderTextColor={colors.textSecondary}
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
-        <Text style={[common.body, styles.heroMotto]}>Your finances. Handled.</Text>
+
+        <Text style={styles.label}>Password</Text>
+        <TextInput
+          placeholder="Enter password"
+          placeholderTextColor={colors.textSecondary}
+          secureTextEntry
+          style={styles.input}
+          value={pw}
+          onChangeText={setPw}
+        />
+
+        {mode === 'signup' && (
+          <>
+            <Text style={styles.requirementsText}>Use at least 8 characters including a number.</Text>
+            <Text style={styles.label}>Confirm Password</Text>
+            <TextInput
+              placeholder="Confirm password"
+              placeholderTextColor={colors.textSecondary}
+              secureTextEntry
+              style={styles.input}
+              value={pw2}
+              onChangeText={setPw2}
+            />
+          </>
+        )}
+
+        {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+        {mode === 'signup' && (
+          <Text style={[common.caption, styles.termsText, styles.captionText]}>
+            By creating an account you agree to our{' '}
+            <Text style={styles.linkText} onPress={() => Linking.openURL('https://example.com/terms')}>Terms of Service</Text>
+            {' '}and{' '}
+            <Text style={styles.linkText} onPress={() => Linking.openURL('https://example.com/privacy')}>Privacy Policy</Text>
+          </Text>
+        )}
+
+        <PrimaryButton
+          title={mode === 'signin' ? 'Sign In' : 'Create Account'}
+          onPress={mode === 'signin' ? handleSignIn : handleCreateAccount}
+          style={styles.button}
+        />
       </View>
 
-      <Text style={[common.title, common.titleBlock, styles.formTitle]}>{mode === 'signin' ? 'Sign In' : 'Create Your Account'}</Text>
-      <TextInput placeholder="Email Address or Phone Number" placeholderTextColor={colors.textSecondary} style={styles.input} value={email} onChangeText={setEmail} />
-      <TextInput placeholder="Password" placeholderTextColor={colors.textSecondary} secureTextEntry style={styles.input} value={pw} onChangeText={setPw} />
-      {mode === 'signup' && <Text style={[common.caption, styles.requirementsText, styles.captionText]}>Use at least 8 characters including a number</Text>}
-      {mode === 'signup' && (
-        <TextInput placeholder="Confirm Password" placeholderTextColor={colors.textSecondary} secureTextEntry style={styles.input} value={pw2} onChangeText={setPw2} />
-      )}
-      {!!error && <Text style={styles.errorText}>{error}</Text>}
-      {mode === 'signup' && (
-        <Text style={[common.caption, styles.termsText, styles.captionText]}>
-          By creating an account you agree to our{' '}
-          <Text style={styles.linkText} onPress={() => Linking.openURL('https://example.com/terms')}>Terms of Service</Text>
-          {' '}and{' '}
-          <Text style={styles.linkText} onPress={() => Linking.openURL('https://example.com/privacy')}>Privacy Policy</Text>
+      <TouchableOpacity
+        onPress={() => {
+          setMode(mode === 'signup' ? 'signin' : 'signup');
+          setError('');
+        }}
+      >
+        <Text style={[common.caption, styles.smallText, styles.captionText]}>
+          {mode === 'signup' ? 'Already have an account? Sign in' : 'Need an account? Create one'}
         </Text>
-      )}
-      <PrimaryButton title={mode === 'signin' ? 'Sign In' : 'Create Account'} onPress={mode === 'signin' ? handleSignIn : handleCreateAccount} style={styles.button} />
-      {mode === 'signup' ? (
-        <TouchableOpacity onPress={() => { setMode('signin'); setError(''); }}>
-          <Text style={[common.caption, styles.smallText, styles.captionText]}>Already have an account? Log in</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity onPress={() => { setMode('signup'); setError(''); }}>
-          <Text style={[common.caption, styles.smallText, styles.captionText]}>Need an account? Create one</Text>
-        </TouchableOpacity>
-      )}
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const createStyles = (colors) => StyleSheet.create({
   form:{padding:SPACING.md},
-  topRow: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: SPACING.md,
-  },
-  signInTab: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.white,
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-  },
-  signInTabText: {
-    color: colors.primary,
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 14,
-  },
   heroWrap: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   heroMotto: {
     marginTop: SPACING.sm,
-    fontSize: 41,
-    lineHeight: 46,
+    fontSize: 28,
+    lineHeight: 34,
     color: colors.primary,
     textAlign: 'center',
+    fontFamily: 'Inter',
+    fontWeight: '800',
+  },
+  heroSub: {
+    marginTop: SPACING.xs,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    fontFamily: 'Inter',
+    fontSize: 14,
+  },
+  modeSwitch: {
+    flexDirection: 'row',
+    backgroundColor: colors.subtleBg,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: SPACING.md,
+  },
+  modePill: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modePillActive: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modeText: {
+    color: colors.textSecondary,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+  },
+  modeTextActive: {
+    color: colors.text,
+  },
+  formCard: {
+    backgroundColor: colors.white,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: SPACING.md,
   },
   input: {
     borderWidth: 1,
@@ -138,13 +217,25 @@ const createStyles = (colors) => StyleSheet.create({
     marginBottom: SPACING.sm,
     color: colors.text,
   },
+  label: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: colors.textSecondary,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    marginBottom: 6,
+  },
   formTitle: {color: colors.text},
   captionText: {color: colors.textSecondary},
-  button:{marginTop:SPACING.xs},
+  button:{marginTop:SPACING.sm},
   smallText:{marginTop:SPACING.md,textAlign:'center'},
   requirementsText: {
-    marginTop: -SPACING.xs,
+    marginTop: -2,
     marginBottom: SPACING.sm,
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontFamily: 'Inter',
   },
   termsText: {
     marginTop: SPACING.xs,

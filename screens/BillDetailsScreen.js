@@ -45,6 +45,7 @@ export default function BillDetailsScreen({route, navigation, onDelete, onSave, 
 
   return (
     <ScrollView style={common.screen} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <Text style={styles.screenTitle}>Bill Details</Text>
 
       {/* Bill hero */}
       <View
@@ -83,6 +84,7 @@ export default function BillDetailsScreen({route, navigation, onDelete, onSave, 
       </View>
 
       {/* Stats row */}
+      <Text style={styles.sectionHeader}>Funding Snapshot</Text>
       <View style={styles.statsRow}>
         <View style={[styles.statCard, {marginRight:8}]} accessible={true} accessibilityLabel={`Saved: $${saved}`}>
           <Text style={styles.statNumber} importantForAccessibility="no">${saved}</Text>
@@ -99,6 +101,7 @@ export default function BillDetailsScreen({route, navigation, onDelete, onSave, 
       </View>
 
       {/* Log transfer */}
+      <Text style={styles.sectionHeader}>Log Savings Transfer</Text>
       <TouchableOpacity
         style={[styles.logButton, showLog && styles.logButtonCancel]}
         onPress={() => setShowLog(p => !p)}
@@ -141,6 +144,7 @@ export default function BillDetailsScreen({route, navigation, onDelete, onSave, 
           >
             <Text style={styles.saveButtonText}>Save Transfer</Text>
           </TouchableOpacity>
+          <Text style={styles.helperText}>Transfers update this bill's saved total and timeline.</Text>
         </View>
       )}
 
@@ -167,6 +171,7 @@ export default function BillDetailsScreen({route, navigation, onDelete, onSave, 
       )}
 
       {/* Actions */}
+      <Text style={styles.sectionHeader}>Bill Actions</Text>
       <View style={styles.actionsRow}>
         <TouchableOpacity
           style={styles.editButton}
@@ -192,6 +197,16 @@ export default function BillDetailsScreen({route, navigation, onDelete, onSave, 
 
 const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:60},
+  screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:SPACING.md},
+  sectionHeader:{
+    fontSize:11,
+    fontWeight:'700',
+    fontFamily:'Inter',
+    color:colors.textSecondary,
+    letterSpacing:1,
+    textTransform:'uppercase',
+    marginBottom:8,
+  },
 
   heroCard:{
     backgroundColor:colors.primary,
@@ -246,6 +261,7 @@ const createStyles = (colors) => StyleSheet.create({
   },
   saveButton:{backgroundColor:colors.primary,borderRadius:10,padding:SPACING.md,alignItems:'center'},
   saveButtonText:{fontSize:15,fontWeight:'700',fontFamily:'Inter',color:colors.onPrimary},
+  helperText:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:4},
 
   historyCard:{
     backgroundColor:colors.white,borderRadius:14,padding:SPACING.md,

@@ -21,7 +21,7 @@ function daysUntil(day) {
   return Math.ceil((d - now) / (1000 * 60 * 60 * 24));
 }
 
-export default function CalendarScreen({bills = []}){
+export default function CalendarScreen({navigation, bills = []}){
   const {colors} = useAppTheme();
   const styles = createStyles(colors);
   const [viewMode, setViewMode] = useState('calendar');
@@ -52,6 +52,7 @@ export default function CalendarScreen({bills = []}){
   }, [events, selectedDate]);
 
   const selectedEvent = events.find(e => e.date === selectedDate);
+  const urgentCount = events.filter((e) => daysUntil(Number(e.date)) <= 5).length;
 
   return (
     <ScrollView
@@ -60,6 +61,16 @@ export default function CalendarScreen({bills = []}){
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.screenTitle}>Calendar</Text>
+
+      <View style={styles.monthSummaryCard}>
+        <View>
+          <Text style={styles.monthSummaryTitle}>{MONTHS[new Date().getMonth()]} Overview</Text>
+          <Text style={styles.monthSummarySub}>{events.length} scheduled bills this cycle</Text>
+        </View>
+        <View style={[styles.urgentPill, urgentCount > 0 && styles.urgentPillWarn]}>
+          <Text style={[styles.urgentPillText, urgentCount > 0 && styles.urgentPillTextWarn]}>{urgentCount} urgent</Text>
+        </View>
+      </View>
 
       {/* View mode toggle */}
       <View style={styles.segmentRow}>
@@ -80,6 +91,9 @@ export default function CalendarScreen({bills = []}){
         <View style={styles.emptyCard}>
           <Text style={styles.emptyTitle}>No bills yet</Text>
           <Text style={styles.emptyBody}>Add bills in the Bills tab to populate your calendar.</Text>
+          <TouchableOpacity style={styles.emptyAction} onPress={() => navigation?.navigate && navigation.navigate('AddBill')}>
+            <Text style={styles.emptyActionText}>Go Add a Bill</Text>
+          </TouchableOpacity>
         </View>
       ) : viewMode === 'calendar' ? (
         <>
@@ -171,6 +185,34 @@ const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:120},
   screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:SPACING.md},
 
+  monthSummaryCard:{
+    backgroundColor:colors.white,
+    borderRadius:14,
+    borderWidth:1,
+    borderColor:colors.border,
+    padding:SPACING.md,
+    marginBottom:SPACING.md,
+    flexDirection:'row',
+    alignItems:'center',
+    justifyContent:'space-between',
+  },
+  monthSummaryTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  monthSummarySub:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
+  urgentPill:{
+    borderRadius:20,
+    borderWidth:1,
+    borderColor:colors.successBorder,
+    backgroundColor:colors.successBg,
+    paddingHorizontal:10,
+    paddingVertical:5,
+  },
+  urgentPillWarn:{
+    borderColor:colors.dangerBorder,
+    backgroundColor:colors.dangerBg,
+  },
+  urgentPillText:{fontSize:12,fontWeight:'700',fontFamily:'Inter',color:colors.successText},
+  urgentPillTextWarn:{color:colors.dangerText},
+
   segmentRow:{
     flexDirection:'row',
     backgroundColor:colors.white,
@@ -188,6 +230,8 @@ const createStyles = (colors) => StyleSheet.create({
   emptyCard:{backgroundColor:colors.white,borderRadius:14,padding:SPACING.lg,borderWidth:1,borderColor:colors.border,alignItems:'center'},
   emptyTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text,marginBottom:4},
   emptyBody:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary,textAlign:'center'},
+  emptyAction:{marginTop:10,backgroundColor:colors.primary,borderRadius:10,paddingHorizontal:12,paddingVertical:8},
+  emptyActionText:{fontSize:12,fontWeight:'700',fontFamily:'Inter',color:colors.onPrimary},
 
   chipGrid:{flexDirection:'row',flexWrap:'wrap',gap:8,marginBottom:SPACING.md},
   chip:{width:60,paddingVertical:10,borderRadius:12,borderWidth:1,borderColor:colors.border,backgroundColor:colors.white,alignItems:'center'},

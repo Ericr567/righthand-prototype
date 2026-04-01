@@ -164,6 +164,12 @@ export default function BankConnectScreen({navigation}) {
       </View>
 
       <View style={styles.contentCard}>
+        <View style={styles.stepRow}>
+          <View style={[styles.stepPill, styles.stepPillActive]}><Text style={styles.stepPillText}>1. Find Bank</Text></View>
+          <View style={[styles.stepPill, selected && styles.stepPillActive]}><Text style={styles.stepPillText}>2. Select</Text></View>
+          <View style={[styles.stepPill, canSecureConnect && styles.stepPillActive]}><Text style={styles.stepPillText}>3. Secure Link</Text></View>
+        </View>
+
         <Text style={styles.inputLabel}>Find your bank</Text>
         <View style={styles.searchRow}>
           <Text style={styles.searchIcon}>🔎</Text>
@@ -256,7 +262,13 @@ export default function BankConnectScreen({navigation}) {
           <Text style={styles.websiteBtnText}>Open Bank Login Page</Text>
         </TouchableOpacity>
 
-        {!!selected && <Text style={styles.selectedText}>Selected: {selected.name}</Text>}
+        {!!selected && (
+          <View style={styles.selectedCard}>
+            <Text style={styles.selectedTitle}>Selected Institution</Text>
+            <Text style={styles.selectedName}>{selected.name}</Text>
+            <Text style={styles.selectedText}>You can now securely connect with Plaid.</Text>
+          </View>
+        )}
         {connecting && (
           <View style={styles.statusRow}>
             <ActivityIndicator size="small" color={colors.primary} />
@@ -321,6 +333,30 @@ const createStyles = (colors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: SPACING.md,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: SPACING.sm,
+  },
+  stepPill: {
+    flex: 1,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.subtleBg,
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  stepPillActive: {
+    backgroundColor: colors.infoBg,
+    borderColor: colors.infoBorder,
+  },
+  stepPillText: {
+    fontSize: 11,
+    fontFamily: 'Inter',
+    color: colors.text,
+    fontWeight: '700',
   },
   inputLabel: {
     fontSize: 12,
@@ -399,7 +435,17 @@ const createStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   websiteBtnText: {fontSize: 14, fontWeight: '700', fontFamily: 'Inter', color: colors.text},
-  selectedText: {fontSize: 12, fontFamily: 'Inter', color: colors.textSecondary, marginTop: 10},
+  selectedCard: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: colors.successBorder,
+    backgroundColor: colors.successBg,
+    borderRadius: 12,
+    padding: SPACING.sm,
+  },
+  selectedTitle: {fontSize: 11, fontFamily: 'Inter', color: colors.textSecondary, textTransform: 'uppercase', fontWeight: '700'},
+  selectedName: {fontSize: 15, fontFamily: 'Inter', color: colors.text, fontWeight: '700', marginTop: 2},
+  selectedText: {fontSize: 12, fontFamily: 'Inter', color: colors.textSecondary, marginTop: 6},
 
   statusRow: {flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10},
   statusText: {fontSize: 12, fontFamily: 'Inter', color: colors.textSecondary},

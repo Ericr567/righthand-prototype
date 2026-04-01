@@ -1,26 +1,53 @@
 import React from 'react';
-import {TouchableOpacity, Text, StyleSheet} from 'react-native';
-import {SPACING, COLORS} from '../styles/common';
+import {TouchableOpacity, Text, StyleSheet, ActivityIndicator} from 'react-native';
+import {SPACING} from '../styles/common';
+import {useAppTheme} from '../theme/ThemeContext';
 
-export default function PrimaryButton({title, onPress, style, textStyle, accessibilityLabel}){
+export default function PrimaryButton({
+  title,
+  onPress,
+  style,
+  textStyle,
+  accessibilityLabel,
+  variant = 'primary',
+  disabled = false,
+  loading = false,
+}){
+  const {colors} = useAppTheme();
+  const styles = createStyles(colors);
+  const isPrimary = variant === 'primary';
+
+  const buttonStyle = [
+    styles.button,
+    isPrimary ? styles.primary : styles.secondary,
+    (disabled || loading) && styles.buttonDisabled,
+    style,
+  ];
+
+  const labelColor = isPrimary ? colors.onPrimary : colors.text;
+
   return (
     <TouchableOpacity
-      style={[styles.button, style]}
+      style={buttonStyle}
       onPress={onPress}
+      disabled={disabled || loading}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
     >
-      <Text style={[styles.text, textStyle]}>{title}</Text>
+      {loading ? (
+        <ActivityIndicator size="small" color={labelColor} />
+      ) : (
+        <Text style={[styles.text, {color: labelColor}, textStyle]}>{title}</Text>
+      )}
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   button: {
-    backgroundColor: COLORS.primary,
     padding: SPACING.sm,
     paddingHorizontal: SPACING.lg,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     minHeight: 54,
     justifyContent: 'center',
@@ -30,8 +57,20 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
+  primary: {
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  secondary: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
   text: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Inter',

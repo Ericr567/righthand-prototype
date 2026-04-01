@@ -32,9 +32,28 @@ export default function SettingsScreen({navigation, themeMode = 'light', onTheme
     <ScrollView style={[common.screen, {backgroundColor: colors.background}]} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.screenTitle}>Settings</Text>
 
+      <View style={styles.profileCard}>
+        <View style={styles.profileAvatar}><Text style={styles.profileInitials}>RH</Text></View>
+        <View style={styles.profileMeta}>
+          <Text style={styles.profileName}>RightHand Member</Text>
+          <Text style={styles.profileSub}>Manage account security, preferences, and support</Text>
+        </View>
+      </View>
+
+      <View style={styles.quickRow}>
+        <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('Profile')}>
+          <Text style={styles.quickActionTitle}>Profile</Text>
+          <Text style={styles.quickActionSub}>Edit personal info</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('Security')}>
+          <Text style={styles.quickActionTitle}>Security</Text>
+          <Text style={styles.quickActionSub}>Password and 2FA</Text>
+        </TouchableOpacity>
+      </View>
+
       <SectionCard title="Account" styles={styles}>
         <SettingsRow label="Profile" onPress={() => navigation.navigate('Profile')} styles={styles} />
-        <SettingsRow label="Bank Accounts" onPress={() => {}} styles={styles} />
+        <SettingsRow label="Bank Accounts" subtitle="Connect and manage linked institutions" onPress={() => navigation.navigate('BankConnect')} styles={styles} />
         <SettingsRow label="Security & Password" onPress={() => navigation.navigate('Security')} styles={styles} />
       </SectionCard>
 
@@ -75,7 +94,7 @@ export default function SettingsScreen({navigation, themeMode = 'light', onTheme
 
       <SectionCard title="Support" styles={styles}>
         <SettingsRow label="Help Center" onPress={() => navigation.navigate('Help')} styles={styles} />
-        <SettingsRow label="Contact Us" onPress={() => {}} styles={styles} />
+        <SettingsRow label="Contact Us" subtitle="Send product feedback and support requests" onPress={() => {}} styles={styles} />
       </SectionCard>
 
       <TouchableOpacity style={styles.logout} onPress={() => navigation.replace('Welcome')}>
@@ -88,6 +107,40 @@ export default function SettingsScreen({navigation, themeMode = 'light', onTheme
 const createStyles = (colors) => StyleSheet.create({
   container:{padding:SPACING.md, paddingBottom:60},
   screenTitle:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.text,marginBottom:SPACING.md},
+
+  profileCard:{
+    backgroundColor:colors.white,
+    borderRadius:16,
+    borderWidth:1,
+    borderColor:colors.border,
+    padding:SPACING.md,
+    marginBottom:SPACING.sm,
+    flexDirection:'row',
+    alignItems:'center',
+    shadowColor:'#000',shadowOffset:{width:0,height:2},shadowOpacity:0.05,shadowRadius:6,elevation:2,
+  },
+  profileAvatar:{
+    width:46,height:46,borderRadius:23,
+    backgroundColor:colors.primary,
+    alignItems:'center',justifyContent:'center',
+    marginRight:SPACING.sm,
+  },
+  profileInitials:{fontSize:14,fontWeight:'800',fontFamily:'Inter',color:colors.onPrimary},
+  profileMeta:{flex:1},
+  profileName:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  profileSub:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
+
+  quickRow:{flexDirection:'row',gap:8,marginBottom:SPACING.md},
+  quickAction:{
+    flex:1,
+    backgroundColor:colors.white,
+    borderWidth:1,
+    borderColor:colors.border,
+    borderRadius:12,
+    padding:SPACING.sm,
+  },
+  quickActionTitle:{fontSize:14,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  quickActionSub:{fontSize:11,fontFamily:'Inter',color:colors.textSecondary,marginTop:4},
 
   sectionCard:{
     backgroundColor:colors.white,
@@ -110,7 +163,7 @@ const createStyles = (colors) => StyleSheet.create({
     borderTopWidth:1,borderTopColor:colors.border,
   },
   rowInner:{flex:1,paddingRight:SPACING.sm},
-  rowLabel:{fontSize:15,fontWeight:'500',fontFamily:'Inter',color:colors.text},
+  rowLabel:{fontSize:15,fontWeight:'600',fontFamily:'Inter',color:colors.text},
   rowSub:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
   rowArrow:{fontSize:22,color:colors.border,fontWeight:'300'},
 

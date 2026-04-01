@@ -176,6 +176,17 @@ export default function DashboardScreen({navigation, bills = [], autoSave = {}})
         </View>
       </View>
 
+      <View style={styles.quickActionsRow}>
+        <TouchableOpacity style={styles.quickAction} onPress={() => navigation?.navigate && navigation.navigate('AddBill')}>
+          <Text style={styles.quickActionTitle}>+ Add Bill</Text>
+          <Text style={styles.quickActionSub}>Track a new due date</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickAction} onPress={() => navigation?.navigate && navigation.navigate('BankConnect')}>
+          <Text style={styles.quickActionTitle}>Connect Bank</Text>
+          <Text style={styles.quickActionSub}>Securely link accounts</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* ── Bill certainty score ── */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Bill Certainty Score</Text>
@@ -246,6 +257,9 @@ export default function DashboardScreen({navigation, bills = [], autoSave = {}})
         {upcomingBills.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>No bills yet — add one in the Bills tab.</Text>
+            <TouchableOpacity style={styles.inlineAction} onPress={() => navigation?.navigate && navigation.navigate('AddBill')}>
+              <Text style={styles.inlineActionText}>Add your first bill</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           upcomingBills.map((bill) => {
@@ -354,6 +368,21 @@ const createStyles = (colors) => StyleSheet.create({
   },
   statNumber:{fontSize:26,fontWeight:'800',fontFamily:'Inter',color:colors.primary},
   statLabel:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2,textAlign:'center'},
+  quickActionsRow:{
+    flexDirection:'row',
+    gap:8,
+    marginBottom:SPACING.md,
+  },
+  quickAction:{
+    flex:1,
+    backgroundColor:colors.white,
+    borderRadius:14,
+    borderWidth:1,
+    borderColor:colors.border,
+    padding:SPACING.sm,
+  },
+  quickActionTitle:{fontSize:14,fontWeight:'700',fontFamily:'Inter',color:colors.text},
+  quickActionSub:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:4},
 
   /* Certainty */
   certaintyCard:{
@@ -440,6 +469,14 @@ const createStyles = (colors) => StyleSheet.create({
   /* Empty state */
   emptyCard:{backgroundColor:colors.white,borderRadius:12,padding:SPACING.md,borderWidth:1,borderColor:colors.border,alignItems:'center'},
   emptyText:{fontSize:14,fontFamily:'Inter',color:colors.textSecondary},
+  inlineAction:{
+    marginTop:10,
+    backgroundColor:colors.primary,
+    borderRadius:10,
+    paddingHorizontal:12,
+    paddingVertical:8,
+  },
+  inlineActionText:{fontSize:12,fontWeight:'700',fontFamily:'Inter',color:colors.onPrimary},
 
   /* Auto save */
   autoSaveCard:{
