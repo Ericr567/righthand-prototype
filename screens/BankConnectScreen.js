@@ -79,10 +79,6 @@ export default function BankConnectScreen({navigation}) {
       setError('Plaid Link is currently enabled for web in this prototype.');
       return;
     }
-    if (!selected) {
-      setError('Select a bank from the dropdown first.');
-      return;
-    }
 
     setConnecting(true);
     setStatus('Creating secure link...');
@@ -100,7 +96,10 @@ export default function BankConnectScreen({navigation}) {
         onSuccess: async (publicToken, metadata) => {
           try {
             setStatus('Finalizing bank connection...');
-            await exchangePublicToken(publicToken, metadata?.institution?.name || selected.name);
+            await exchangePublicToken(
+              publicToken,
+              metadata?.institution?.name || selected?.name || null
+            );
             setConnecting(false);
             setShowSuccess(true);
             setStatus('');
@@ -115,7 +114,7 @@ export default function BankConnectScreen({navigation}) {
           setConnecting(false);
           setStatus('');
           if (exitError) {
-            setError('Plaid was closed before completion.');
+            setError(exitError.display_message || exitError.error_message || 'Plaid was closed before completion.');
           }
         },
       });
@@ -133,7 +132,7 @@ export default function BankConnectScreen({navigation}) {
     await handleContinue();
   }
 
-  const canSecureConnect = !connecting && !!selected && (Platform.OS !== 'web' || linkReady);
+  const canSecureConnect = !connecting && (Platform.OS !== 'web' || linkReady);
 
   async function handleVisitWebsite() {
     setError('');
@@ -172,7 +171,7 @@ export default function BankConnectScreen({navigation}) {
         <View style={styles.stepRow}>
           <View style={[styles.stepPill, styles.stepPillActive]}><Text style={styles.stepPillText}>1. Find Bank</Text></View>
           <View style={[styles.stepPill, selected && styles.stepPillActive]}><Text style={styles.stepPillText}>2. Select</Text></View>
-          <View style={[styles.stepPill, canSecureConnect && styles.stepPillActive]}><Text style={styles.stepPillText}>3. Secure Link</Text></View>
+          <View style={[styles.stepPill, (linkReady || Platform.OS !== 'web') && styles.stepPillActive]}><Text style={styles.stepPillText}>3. Secure Link</Text></View>
         </View>
 
         <Text style={styles.inputLabel}>Find your bank</Text>
@@ -240,32 +239,37 @@ export default function BankConnectScreen({navigation}) {
           )}
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.connectBtn,
-            !canSecureConnect && styles.connectBtnDisabled,
-          ]}
-          onPress={handleSecureConnect}
-          disabled={!canSecureConnect}
-          accessibilityRole="button"
-          accessibilityLabel="Securely connect to Plaid"
-        >
-          <Text style={styles.connectBtnText}>
-            {connecting ? 'Connecting to Plaid...' : 'Securely Connect to Plaid'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.actionsWrap}>
+          <TouchableOpacity
+            style={[
+              styles.plaidBtn,
+              !canSecureConnect && styles.connectBtnDisabled,
+            ]}
+            onPress={handleSecureConnect}
+            disabled={!canSecureConnect}
+            accessibilityRole="button"
+            accessibilityLabel="Connect with Plaid"
+          >
+            <Text style={styles.plaidBtnIcon}>🟩</Text>
+            <Text style={styles.plaidBtnText}>
+              {connecting ? 'Connecting...' : 'Connect with Plaid'}
+            </Text>
+          </TouchableOpacity>
 
-        <Text style={styles.secureNote}>This launches Plaid secure Link for encrypted bank connection.</Text>
+          <TouchableOpacity
+            style={[styles.websiteBtn, !selected && styles.connectBtnDisabled]}
+            onPress={handleVisitWebsite}
+            disabled={!selected}
+            accessibilityRole="button"
+            accessibilityLabel="Visit selected bank website"
+          >
+            <Text style={styles.websiteBtnText}>Open Bank Login Page</Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={[styles.websiteBtn, !selected && styles.connectBtnDisabled]}
-          onPress={handleVisitWebsite}
-          disabled={!selected}
-          accessibilityRole="button"
-          accessibilityLabel="Visit selected bank website"
-        >
-          <Text style={styles.websiteBtnText}>Open Bank Login Page</Text>
-        </TouchableOpacity>
+        <Text style={styles.secureNote}>
+          The Plaid button is a separate secure flow and works even if you do not preselect a bank.
+        </Text>
 
         {!!selected && (
           <View style={styles.selectedCard}>
@@ -420,6 +424,29 @@ const createStyles = (colors) => StyleSheet.create({
   dropdownEmpty: {paddingVertical: 14, paddingHorizontal: SPACING.sm},
   dropdownEmptyText: {fontSize: 13, fontFamily: 'Inter', color: colors.textSecondary},
 
+  actionsWrap: {
+    marginTop: 14,
+    gap: 10,
+  },
+  plaidBtn: {
+    backgroundColor: '#111111',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  plaidBtnIcon: {
+    fontSize: 10,
+    color: '#00D54B',
+  },
+  plaidBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    fontFamily: 'Inter',
+    color: '#FFFFFF',
+  },
   connectBtn: {
     marginTop: 14,
     backgroundColor: colors.primary,

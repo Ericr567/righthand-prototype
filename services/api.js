@@ -15,7 +15,11 @@ async function requestJson(path, options) {
   }
 
   if (!response.ok) {
-    throw new Error(data.error || `Request failed with status ${response.status}`);
+    const requestId = data.requestId ? ` (requestId: ${data.requestId})` : '';
+    const plaidMeta = data.plaidRequestId
+      ? ` [plaidRequestId: ${data.plaidRequestId}${data.plaidErrorCode ? `, code: ${data.plaidErrorCode}` : ''}]`
+      : '';
+    throw new Error((data.error || `Request failed with status ${response.status}`) + plaidMeta + requestId);
   }
 
   return data;

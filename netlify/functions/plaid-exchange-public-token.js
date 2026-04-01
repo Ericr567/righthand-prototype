@@ -125,11 +125,18 @@ exports.handler = async function handler(event) {
       itemId,
     }, event);
   } catch (error) {
+    const provider = error.response?.data;
     logger.error('plaid-exchange-public-token failed', {
-      error: error.response?.data || error.message,
+      error: provider || error.message,
       requestId,
     });
     const message = typeof error.message === 'string' ? error.message : '';
+    const providerMessage =
+      provider?.error_message ||
+      provider?.display_message ||
+      null;
+    const providerCode = provider?.error_code || null;
+    const providerRequestId = provider?.request_id || null;
     const isConfigError =
       message.startsWith('Missing PLAID_') ||
       message.includes('PLAID_TOKEN_ENCRYPTION_KEY must decode to 32 bytes');
@@ -139,7 +146,15 @@ exports.handler = async function handler(event) {
       ? `${message}. Verify local .env and Netlify environment variables.`
       : isInputError
         ? message
-        : 'Failed to exchange public token';
-    return jsonResponse(statusCode, {error: safeError}, event);
+        : providerMessage || 'Failed to exchange public token';
+    return jsonResponse(
+      statusCode,
+      {
+        error: safeError,
+        plaidErrorCode: providerCode,
+        plaidRequestId: providerRequestId,
+      },
+      event
+    );
   }
 };
