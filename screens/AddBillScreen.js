@@ -5,7 +5,7 @@ import common, {SPACING} from '../styles/common';
 import {useAppTheme} from '../theme/ThemeContext';
 import PrimaryButton from '../components/PrimaryButton';
 
-const DUE_OPTIONS  = ['1','5','10','15','20','25','30'];
+const DUE_OPTIONS  = Array.from({length: 31}, (_, i) => String(i + 1));
 const FREQ_OPTIONS = ['Monthly','Weekly','Yearly'];
 
 export default function AddBillScreen({navigation, route, onSave}){

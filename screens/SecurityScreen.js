@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet, Switch} from 'react-native';
 import common, {SPACING} from '../styles/common';
 import {useAppTheme} from '../theme/ThemeContext';
+import {updatePassword} from '../services/supabase';
 
 export default function SecurityScreen({navigation}){
   const {colors} = useAppTheme();
@@ -14,17 +15,26 @@ export default function SecurityScreen({navigation}){
   const [biometric,  setBiometric]  = useState(false);
   const [pwSuccess,  setPwSuccess]  = useState(false);
   const [pwError,    setPwError]    = useState('');
+  const [pwSaving,   setPwSaving]   = useState(false);
 
-  function handleChangePassword(){
+  async function handleChangePassword(){
     if (!currentPw) { setPwError('Please enter your current password.'); return; }
     if (newPw.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
     if (newPw !== confirmPw) { setPwError('New passwords do not match.'); return; }
     setPwError('');
-    setPwSuccess(true);
-    setCurrentPw('');
-    setNewPw('');
-    setConfirmPw('');
-    setTimeout(() => setPwSuccess(false), 3000);
+    setPwSaving(true);
+    try {
+      await updatePassword(newPw);
+      setPwSuccess(true);
+      setCurrentPw('');
+      setNewPw('');
+      setConfirmPw('');
+      setTimeout(() => setPwSuccess(false), 3000);
+    } catch (err) {
+      setPwError(err.message || 'Failed to update password. Please try again.');
+    } finally {
+      setPwSaving(false);
+    }
   }
 
   const pwStrength = newPw.length === 0 ? null
@@ -113,8 +123,8 @@ export default function SecurityScreen({navigation}){
           At least 8 characters · one uppercase letter · one number
         </Text>
 
-        <TouchableOpacity style={styles.saveBtn} onPress={handleChangePassword}>
-          <Text style={styles.saveBtnText}>Update Password</Text>
+        <TouchableOpacity style={[styles.saveBtn, pwSaving && {opacity: 0.6}]} onPress={handleChangePassword} disabled={pwSaving}>
+          <Text style={styles.saveBtnText}>{pwSaving ? 'Updating...' : 'Update Password'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -125,7 +135,7 @@ export default function SecurityScreen({navigation}){
         <View style={styles.toggleRow}>
           <View style={styles.toggleInfo}>
             <Text style={styles.toggleLabel}>Two-Factor Authentication</Text>
-            <Text style={styles.toggleSub}>Require a code when signing in from a new device.</Text>
+            <Text style={styles.toggleSub}>Require a code when signing in from a new device. (Coming soon)</Text>
           </View>
           <Switch
             value={twoFA}
@@ -138,7 +148,7 @@ export default function SecurityScreen({navigation}){
         <View style={[styles.toggleRow, {borderTopWidth:1, borderTopColor:colors.border}]}>
           <View style={styles.toggleInfo}>
             <Text style={styles.toggleLabel}>Biometric Login</Text>
-            <Text style={styles.toggleSub}>Use Face ID or fingerprint to sign in quickly.</Text>
+            <Text style={styles.toggleSub}>Use Face ID or fingerprint to sign in quickly. (Coming soon)</Text>
           </View>
           <Switch
             value={biometric}

@@ -22,24 +22,26 @@ export default function BankConnectScreen({navigation}) {
   const [linkReady, setLinkReady] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     let cancelled = false;
+    setError('');
     ensurePlaidScript()
       .then(() => {
         if (!cancelled) setLinkReady(true);
       })
       .catch(() => {
         if (!cancelled) {
-          setError('Unable to load Plaid Link. Refresh and try again.');
+          setError('Unable to load Plaid Link. Tap retry or refresh the page.');
           setLinkReady(false);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadAttempt]);
 
   useEffect(() => {
     let cancelled = false;
@@ -287,7 +289,21 @@ export default function BankConnectScreen({navigation}) {
         {!linkReady && Platform.OS === 'web' && !connecting && (
           <Text style={styles.helperText}>Loading Plaid Link...</Text>
         )}
-        {!!error && <Text style={styles.errorText}>{error}</Text>}
+        {!!error && (
+          <View>
+            <Text style={styles.errorText}>{error}</Text>
+            {!linkReady && Platform.OS === 'web' && (
+              <TouchableOpacity
+                onPress={() => { setError(''); setLoadAttempt(n => n + 1); }}
+                style={styles.retryBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Retry loading Plaid"
+              >
+                <Text style={styles.retryBtnText}>Retry</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
 
       {!showSuccess && (
@@ -482,6 +498,8 @@ const createStyles = (colors) => StyleSheet.create({
   statusRow: {flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10},
   statusText: {fontSize: 12, fontFamily: 'Inter', color: colors.textSecondary},
   errorText: {fontSize: 12, fontFamily: 'Inter', color: colors.dangerText, marginTop: 10},
+  retryBtn: {marginTop: 8, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: colors.primary},
+  retryBtnText: {fontSize: 13, fontWeight: '600', fontFamily: 'Inter', color: colors.primary},
 
   skipWrap: {alignItems: 'center', paddingVertical: 12, marginBottom: 4},
   skipText: {fontSize: 12, fontFamily: 'Inter', color: colors.textSecondary, textDecorationLine: 'underline'},

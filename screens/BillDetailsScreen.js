@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView} from 'react-native';
+import {Alert, View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView} from 'react-native';
 import ProgressBar from '../components/ProgressBar';
 
 import common, {SPACING} from '../styles/common';
@@ -183,7 +183,16 @@ export default function BillDetailsScreen({route, navigation, onDelete, onSave, 
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
-          onPress={() => { onDelete && onDelete(bill.id); }}
+          onPress={() => {
+            Alert.alert(
+              'Delete Bill',
+              `Are you sure you want to delete "${bill.name}"? All transfer history will also be removed. This cannot be undone.`,
+              [
+                {text: 'Cancel', style: 'cancel'},
+                {text: 'Delete', style: 'destructive', onPress: () => onDelete && onDelete(bill.id)},
+              ]
+            );
+          }}
           accessibilityRole="button"
           accessibilityLabel={`Delete ${bill.name}`}
           accessibilityHint="Permanently removes this bill and its history"

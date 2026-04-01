@@ -272,6 +272,12 @@ export default function App(){
       await signOutUser();
     } catch (err) {
       console.warn('Failed to sign out', err.message);
+    } finally {
+      // Clear all local data regardless of whether sign-out succeeded
+      setBills([]);
+      setTransactions([]);
+      setAutoSave({enabled:false, amountType:'fixed', amount:0, frequency:'Bi-weekly', nextPayDate:''});
+      AsyncStorage.removeItem(APP_STATE_KEY).catch(() => {});
     }
   }, []);
 
@@ -408,7 +414,13 @@ export default function App(){
             }}
           </Stack.Screen>
 
-          <Stack.Screen name="AddPaycheck" component={AddPaycheckScreen} options={{title:'Your Pay Schedule'}} />
+          <Stack.Screen name="AddPaycheck" options={{title:'Your Pay Schedule'}}>
+            {props => <AddPaycheckScreen {...props} route={{...props.route, params: {
+              ...props.route.params,
+              paycheck: {frequency: autoSave.frequency, nextPayDate: autoSave.nextPayDate, amount: autoSave.amount},
+              onSave: (config) => setAutoSave(prev => ({...prev, ...config})),
+            }}} />}
+          </Stack.Screen>
           <Stack.Screen name="AutoSave" options={{title:'Auto Save'}}>
             {props => <AutoSaveScreen {...props} route={{...props.route, params:{autoSave, onSave: updateAutoSave}}} />}
           </Stack.Screen>

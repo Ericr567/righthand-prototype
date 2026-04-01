@@ -5,6 +5,7 @@ import common, {SPACING} from '../styles/common';
 import {useAppTheme} from '../theme/ThemeContext';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS_OF_WEEK = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
 function getNextDueDate(day) {
@@ -25,23 +26,41 @@ export default function CalendarScreen({navigation, bills = []}){
   const {colors} = useAppTheme();
   const styles = createStyles(colors);
   const [viewMode, setViewMode] = useState('calendar');
+  const today = useMemo(() => new Date(), []);
+  const [viewDate, setViewDate] = useState({month: today.getMonth(), year: today.getFullYear()});
+
+  function prevMonth() {
+    setViewDate(({month, year}) =>
+      month === 0 ? {month: 11, year: year - 1} : {month: month - 1, year}
+    );
+  }
+  function nextMonth() {
+    setViewDate(({month, year}) =>
+      month === 11 ? {month: 0, year: year + 1} : {month: month + 1, year}
+    );
+  }
 
   const events = useMemo(() => {
     return bills
       .map((bill) => {
         const remaining = Math.max(0, (Number(bill.amount) || 0) - (Number(bill.saved) || 0));
+        const day = Number(bill.due) || 1;
+        const dueDate = new Date(viewDate.year, viewDate.month, day);
+        const daysAway = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
         return {
-          date: String(bill.due || 1),
+          date: String(day),
           billName: bill.name,
           amount: bill.amount || 0,
           saved: bill.saved || 0,
           autoPay: !!bill.autoPay,
           savingsEach: Math.round(remaining / 4),
+          daysAway,
+          monthLabel: `${MONTHS[viewDate.month]} ${day}`,
           id: bill.id,
         };
       })
       .sort((a, b) => Number(a.date) - Number(b.date));
-  }, [bills]);
+  }, [bills, viewDate, today]);
 
   const [selectedDate, setSelectedDate] = useState(events[0]?.date || '1');
 
@@ -52,7 +71,7 @@ export default function CalendarScreen({navigation, bills = []}){
   }, [events, selectedDate]);
 
   const selectedEvent = events.find(e => e.date === selectedDate);
-  const urgentCount = events.filter((e) => daysUntil(Number(e.date)) <= 5).length;
+  const urgentCount = events.filter((e) => e.daysAway >= 0 && e.daysAway <= 5).length;
 
   return (
     <ScrollView
@@ -63,13 +82,16 @@ export default function CalendarScreen({navigation, bills = []}){
       <Text style={styles.screenTitle}>Calendar</Text>
 
       <View style={styles.monthSummaryCard}>
-        <View>
-          <Text style={styles.monthSummaryTitle}>{MONTHS[new Date().getMonth()]} Overview</Text>
-          <Text style={styles.monthSummarySub}>{events.length} scheduled bills this cycle</Text>
+        <TouchableOpacity onPress={prevMonth} style={styles.monthNavBtn} accessibilityLabel="Previous month">
+          <Text style={styles.monthNavText}>‹</Text>
+        </TouchableOpacity>
+        <View style={{flex:1, alignItems:'center'}}>
+          <Text style={styles.monthSummaryTitle}>{MONTHS_FULL[viewDate.month]} {viewDate.year}</Text>
+          <Text style={styles.monthSummarySub}>{events.length} bills this cycle · {urgentCount > 0 ? `${urgentCount} urgent` : 'all on track'}</Text>
         </View>
-        <View style={[styles.urgentPill, urgentCount > 0 && styles.urgentPillWarn]}>
-          <Text style={[styles.urgentPillText, urgentCount > 0 && styles.urgentPillTextWarn]}>{urgentCount} urgent</Text>
-        </View>
+        <TouchableOpacity onPress={nextMonth} style={styles.monthNavBtn} accessibilityLabel="Next month">
+          <Text style={styles.monthNavText}>›</Text>
+        </TouchableOpacity>
       </View>
 
       {/* View mode toggle */}
@@ -100,7 +122,7 @@ export default function CalendarScreen({navigation, bills = []}){
           {/* Date chip grid */}
           <View style={styles.chipGrid}>
             {events.map((event, i) => {
-              const urgent = daysUntil(Number(event.date)) <= 5;
+              const urgent = event.daysAway >= 0 && event.daysAway <= 5;
               const active = selectedDate === event.date;
               return (
                 <TouchableOpacity
@@ -112,7 +134,7 @@ export default function CalendarScreen({navigation, bills = []}){
                     {event.date}
                   </Text>
                   <Text style={[styles.chipSub, active && {color:colors.onPrimaryMuted}]}>
-                    {MONTHS[new Date(new Date().getFullYear(), new Date().getMonth(), Number(event.date)).getMonth()]}
+                    {MONTHS[viewDate.month]}
                   </Text>
                 </TouchableOpacity>
               );
@@ -125,7 +147,7 @@ export default function CalendarScreen({navigation, bills = []}){
               <View style={styles.detailHeader}>
                 <View>
                   <Text style={styles.detailBillName}>{selectedEvent.billName}</Text>
-                  <Text style={styles.detailDue}>Due {getNextDueDate(Number(selectedEvent.date))} · {daysUntil(Number(selectedEvent.date))} days away</Text>
+                <Text style={styles.detailDue}>Due {selectedEvent.monthLabel} · {selectedEvent.daysAway > 0 ? `${selectedEvent.daysAway} days away` : selectedEvent.daysAway === 0 ? 'Due today' : 'Past due'}</Text>
                 </View>
                 <View style={[styles.pill, selectedEvent.autoPay ? styles.pillGreen : styles.pillGray]}>
                   <Text style={[styles.pillText, selectedEvent.autoPay ? styles.pillTextGreen : styles.pillTextGray]}>
@@ -155,14 +177,14 @@ export default function CalendarScreen({navigation, bills = []}){
       ) : (
         /* List view */
         events.map((event, i) => {
-          const days = daysUntil(Number(event.date));
-          const urgent = days <= 5;
+          const days = event.daysAway;
+          const urgent = days >= 0 && days <= 5;
           return (
             <View key={`${event.date}-${i}`} style={[styles.listRow, urgent && styles.listRowUrgent]}>
               <View style={styles.listLeft}>
                 <View style={styles.listDateBadge}>
                   <Text style={styles.listDateDay}>{event.date}</Text>
-                  <Text style={styles.listDateMon}>{getNextDueDate(Number(event.date)).split(' ')[0]}</Text>
+                  <Text style={styles.listDateMon}>{MONTHS[viewDate.month]}</Text>
                 </View>
                 <View>
                   <Text style={styles.listBillName}>{event.billName}</Text>
@@ -198,6 +220,8 @@ const createStyles = (colors) => StyleSheet.create({
   },
   monthSummaryTitle:{fontSize:16,fontWeight:'700',fontFamily:'Inter',color:colors.text},
   monthSummarySub:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
+  monthNavBtn:{paddingHorizontal:SPACING.sm, paddingVertical:4},
+  monthNavText:{fontSize:28,fontWeight:'300',fontFamily:'Inter',color:colors.primary,lineHeight:32},
   urgentPill:{
     borderRadius:20,
     borderWidth:1,

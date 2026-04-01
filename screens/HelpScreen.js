@@ -46,7 +46,7 @@ export default function HelpScreen({navigation}){
         );
       })}
 
-      <TouchableOpacity style={styles.contactCard} onPress={() => Linking.openURL('https://example.com/help')} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.contactCard} onPress={() => Linking.openURL('mailto:support@righthand.app')} activeOpacity={0.8}>
         <View>
           <Text style={styles.contactTitle}>Still need help?</Text>
           <Text style={styles.contactSub}>Visit our full Help Center</Text>

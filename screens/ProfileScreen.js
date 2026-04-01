@@ -1,8 +1,12 @@
-import React, {useState} from 'react';
-import {ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {Alert, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import common, {SPACING} from '../styles/common';
 import {useAppTheme} from '../theme/ThemeContext';
 import PrimaryButton from '../components/PrimaryButton';
+import {signOutUser} from '../services/supabase';
+
+const PROFILE_KEY = 'righthand_profile_v1';
 
 export default function ProfileScreen({navigation}){
   const {colors} = useAppTheme();
@@ -13,8 +17,40 @@ export default function ProfileScreen({navigation}){
   const [phone,     setPhone]     = useState('');
   const [editing,   setEditing]   = useState(false);
 
+  useEffect(() => {
+    AsyncStorage.getItem(PROFILE_KEY).then(raw => {
+      if (!raw) return;
+      try {
+        const p = JSON.parse(raw);
+        if (p.firstName) setFirstName(p.firstName);
+        if (p.lastName)  setLastName(p.lastName);
+        if (p.email)     setEmail(p.email);
+        if (p.phone)     setPhone(p.phone);
+      } catch {}
+    }).catch(() => {});
+  }, []);
+
   function handleSave(){
+    AsyncStorage.setItem(PROFILE_KEY, JSON.stringify({firstName, lastName, email, phone})).catch(() => {});
     setEditing(false);
+  }
+
+  function handleDeleteAccount(){
+    Alert.alert(
+      'Delete Account',
+      'This will permanently remove your account and all data. This action cannot be undone.',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await AsyncStorage.clear();
+            await signOutUser();
+          } catch (err) {
+            console.warn('Delete account error:', err.message);
+          }
+        }},
+      ]
+    );
   }
 
   return (
@@ -100,7 +136,7 @@ export default function ProfileScreen({navigation}){
       {/* Danger zone */}
       <View style={styles.dangerCard}>
         <Text style={styles.dangerTitle}>Danger Zone</Text>
-        <TouchableOpacity style={styles.dangerBtn}>
+        <TouchableOpacity style={styles.dangerBtn} onPress={handleDeleteAccount}>
           <Text style={styles.dangerBtnText}>Delete Account</Text>
         </TouchableOpacity>
         <Text style={styles.dangerHint}>This will permanently remove your account and all data. This action cannot be undone.</Text>

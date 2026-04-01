@@ -152,9 +152,9 @@ export default function SignupScreen({navigation, onSignUp, onSignIn, hasSupabas
         {mode === 'signup' && (
           <Text style={[common.caption, styles.termsText, styles.captionText]}>
             By creating an account you agree to our{' '}
-            <Text style={styles.linkText} onPress={() => Linking.openURL('https://example.com/terms')}>Terms of Service</Text>
+            <Text style={styles.linkText} onPress={() => Linking.openURL('mailto:support@righthand.app?subject=Terms')}>Terms of Service</Text>
             {' '}and{' '}
-            <Text style={styles.linkText} onPress={() => Linking.openURL('https://example.com/privacy')}>Privacy Policy</Text>
+            <Text style={styles.linkText} onPress={() => Linking.openURL('mailto:support@righthand.app?subject=Privacy')}>Privacy Policy</Text>
           </Text>
         )}
 

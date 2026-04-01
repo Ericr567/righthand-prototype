@@ -64,3 +64,11 @@ export function subscribeToAuthChanges(callback) {
   const {data} = supabase.auth.onAuthStateChange((_event, session) => callback(session));
   return data.subscription;
 }
+
+export async function updatePassword(newPassword) {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error('Supabase is not configured. Password change is unavailable.');
+  const {data, error} = await supabase.auth.updateUser({password: newPassword});
+  if (error) throw error;
+  return data;
+}

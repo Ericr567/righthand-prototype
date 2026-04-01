@@ -10,14 +10,30 @@ export default function NotificationsScreen({bills = []}){
   const [inApp,  setInApp]  = React.useState(true);
   const [phone,  setPhone]  = React.useState(false);
 
-  const initialNotes = React.useMemo(() => bills.flatMap((bill) => {
-    const remaining = Math.max(0, (Number(bill.amount) || 0) - (Number(bill.saved) || 0));
-    return [
-      {id:`${bill.id}-a`, type:'savings', text:`${bill.name}: $${bill.saved || 0} saved so far`},
-      {id:`${bill.id}-b`, type:'due',     text:`${bill.name} is due on day ${bill.due}`},
-      {id:`${bill.id}-c`, type:'status',  text:`${bill.name} auto-pay is ${bill.autoPay ? 'On' : 'Off'} — ${remaining > 0 ? `$${remaining} remaining` : 'Fully funded'}`},
-    ];
-  }), [bills]);
+  const initialNotes = React.useMemo(() => {
+    const now = new Date();
+    const alerts = [];
+    bills.forEach((bill) => {
+      const amount = Number(bill.amount) || 0;
+      const saved = Number(bill.saved) || 0;
+      const remaining = Math.max(0, amount - saved);
+      const due = Number(bill.due) || 1;
+      let dueDate = new Date(now.getFullYear(), now.getMonth(), due);
+      if (dueDate <= now) dueDate = new Date(now.getFullYear(), now.getMonth() + 1, due);
+      const daysAway = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+      if (remaining === 0 && amount > 0) {
+        alerts.push({id:`${bill.id}-funded`, type:'savings', text:`${bill.name} is fully funded — $${amount} ready for the due date!`});
+      } else if (daysAway <= 3 && remaining > 0) {
+        alerts.push({id:`${bill.id}-urgent`, type:'due', text:`${bill.name} due in ${daysAway} day${daysAway === 1 ? '' : 's'} — $${remaining} still needed.`});
+      } else if (daysAway <= 7 && remaining > 0) {
+        alerts.push({id:`${bill.id}-week`, type:'status', text:`${bill.name} due in ${daysAway} days — $${remaining} remaining to fund.`});
+      }
+    });
+    if (alerts.length === 0 && bills.length > 0) {
+      alerts.push({id:'all-ok', type:'savings', text:'All bills are on track — no actions needed right now.'});
+    }
+    return alerts;
+  }, [bills]);
 
   const [notes, setNotes] = React.useState(initialNotes);
   React.useEffect(() => { setNotes(initialNotes); }, [initialNotes]);

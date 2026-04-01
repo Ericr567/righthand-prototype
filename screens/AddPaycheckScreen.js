@@ -7,12 +7,24 @@ import PrimaryButton from '../components/PrimaryButton';
 
 const FREQUENCIES = ['Weekly', 'Bi-weekly', 'Semi-monthly', 'Monthly'];
 
-export default function AddPaycheckScreen({navigation}){
+function todayString() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export default function AddPaycheckScreen({navigation, route}){
   const {colors} = useAppTheme();
   const styles = createStyles(colors);
-  const [freq,     setFreq]     = useState('Bi-weekly');
-  const [nextDate, setNextDate] = useState('2026-03-01');
-  const [amt,      setAmt]      = useState('');
+  const existing = route.params?.paycheck;
+  const [freq,     setFreq]     = useState(existing?.frequency || 'Bi-weekly');
+  const [nextDate, setNextDate] = useState(existing?.nextPayDate || todayString());
+  const [amt,      setAmt]      = useState(existing?.amount ? String(existing.amount) : '');
+
+  function handleSave() {
+    route?.params?.onSave?.({frequency: freq, nextPayDate: nextDate, amount: Number(amt) || 0});
+    navigation.goBack();
+  }
 
   return (
     <ScrollView style={common.screen} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -62,7 +74,7 @@ export default function AddPaycheckScreen({navigation}){
         </View>
       </View>
 
-      <PrimaryButton title="Save Schedule" onPress={() => navigation.goBack()} style={{marginTop:SPACING.xs}} />
+      <PrimaryButton title="Save Schedule" onPress={handleSave} style={{marginTop:SPACING.xs}} />
       <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity>
