@@ -2,6 +2,7 @@ import React from 'react';
 import {ScrollView, Text, TouchableOpacity, StyleSheet, View, Switch} from 'react-native';
 import common, {SPACING} from '../styles/common';
 import {useAppTheme} from '../theme/ThemeContext';
+import PrimaryButton from '../components/PrimaryButton';
 
 function SettingsRow({label, subtitle, onPress, arrow=true, rightAccessory, styles}){
   return (
@@ -54,6 +55,13 @@ export default function SettingsScreen({navigation, themeMode = 'light', onTheme
       <SectionCard title="Account" styles={styles}>
         <SettingsRow label="Profile" onPress={() => navigation.navigate('Profile')} styles={styles} />
         <SettingsRow label="Bank Accounts" subtitle="Connect and manage linked institutions" onPress={() => navigation.navigate('BankConnect')} styles={styles} />
+        <View style={styles.bankActionsWrap}>
+          <PrimaryButton
+            title="Connect Bank with Plaid"
+            onPress={() => navigation.navigate('BankConnect')}
+            accessibilityLabel="Connect bank with Plaid"
+          />
+        </View>
         <SettingsRow label="Security & Password" onPress={() => navigation.navigate('Security')} styles={styles} />
       </SectionCard>
 
@@ -174,6 +182,13 @@ const createStyles = (colors) => StyleSheet.create({
   rowLabel:{fontSize:15,fontWeight:'600',fontFamily:'Inter',color:colors.text},
   rowSub:{fontSize:12,fontFamily:'Inter',color:colors.textSecondary,marginTop:2},
   rowArrow:{fontSize:22,color:colors.border,fontWeight:'300'},
+
+  bankActionsWrap: {
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
 
   logout:{
     marginTop:SPACING.sm,
