@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 import {ActivityIndicator, Text} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
@@ -24,7 +24,7 @@ import SecurityScreen from './screens/SecurityScreen';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import BrandLogo from './components/BrandLogo';
 import {BRANDING} from './assets/branding';
-import {ThemeProvider, buildNavigationTheme} from './theme/ThemeContext';
+import {ThemeProvider, buildNavigationTheme, useAppTheme} from './theme/ThemeContext';
 import {
   isSupabaseConfigured,
   getCurrentSession,
@@ -38,6 +38,58 @@ import {loadUserAppState, saveUserAppState} from './services/userDataApi';
 const Stack = createStackNavigator();
 const Tabs = createBottomTabNavigator();
 const APP_STATE_KEY = 'righthand_app_state_v1';
+
+const TAB_ICONS = {Home:'🏠', Bills:'📋', Calendar:'📅', Bank:'🏦', Settings:'⚙️'};
+
+export const AppStateContext = createContext({
+  enrichedBills: [],
+  autoSave: {enabled: false, amountType: 'fixed', amount: 0, frequency: 'Bi-weekly', nextPayDate: ''},
+  toggleBillAutoPay: () => {},
+  handleSignOut: () => {},
+});
+
+function MainTabs() {
+  const {enrichedBills, autoSave, toggleBillAutoPay, handleSignOut} = useContext(AppStateContext);
+  const {isDark, colors, mode, setMode} = useAppTheme();
+  const shellBg = colors.background;
+
+  return (
+    <Tabs.Navigator
+      screenOptions={({route}) => ({
+        headerShown: false,
+        tabBarIcon: ({focused}) => {
+          const {Text} = require('react-native');
+          return (
+            <Text style={{fontSize: 20, opacity: focused ? 1 : 0.5}}>
+              {TAB_ICONS[route.name]}
+            </Text>
+          );
+        },
+        tabBarLabel: route.name,
+        tabBarActiveTintColor: isDark ? '#6FD09A' : '#0B4226',
+        tabBarInactiveTintColor: isDark ? '#A6B8AE' : '#36454F',
+        tabBarLabelStyle: {fontSize:11, fontFamily:'Inter', fontWeight:'600', marginBottom:2},
+        tabBarStyle: {
+          backgroundColor: shellBg,
+          borderTopWidth:1,
+          borderTopColor: isDark ? '#2A3A33' : '#9BB38C',
+          paddingTop:6,
+          height:62,
+        },
+      })}
+    >
+      <Tabs.Screen name="Home">
+        {props => <DashboardScreen {...props} bills={enrichedBills} autoSave={autoSave} />}
+      </Tabs.Screen>
+      <Tabs.Screen name="Bills">{props => <AutoPayScreen {...props} bills={enrichedBills} onToggleAutoPay={toggleBillAutoPay} />}</Tabs.Screen>
+      <Tabs.Screen name="Calendar">{props => <CalendarScreen {...props} bills={enrichedBills} />}</Tabs.Screen>
+      <Tabs.Screen name="Bank" component={BankConnectScreen} />
+      <Tabs.Screen name="Settings">
+        {props => <SettingsScreen {...props} themeMode={mode} onThemeModeChange={setMode} onSignOut={handleSignOut} />}
+      </Tabs.Screen>
+    </Tabs.Navigator>
+  );
+}
 
 export default function App(){
   const [bills, setBills] = useState([]);
@@ -215,13 +267,13 @@ export default function App(){
     }
   }
 
-  async function handleSignOut() {
+  const handleSignOut = useCallback(async () => {
     try {
       await signOutUser();
     } catch (err) {
       console.warn('Failed to sign out', err.message);
     }
-  }
+  }, []);
 
   const navTheme = useMemo(() => buildNavigationTheme(themeMode), [themeMode]);
   const isDark = themeMode === 'dark';
@@ -268,52 +320,19 @@ export default function App(){
     setBills(prev=>prev.filter(b=>b.id!==id));
     setTransactions(prev=>prev.filter(tx=>tx.billId!==id));
   }
-  function toggleBillAutoPay(id){
+  const toggleBillAutoPay = useCallback((id) => {
     setBills(prev => prev.map(bill => bill.id === id ? {...bill, autoPay: !bill.autoPay} : bill));
-  }
+  }, []);
 
-  const tabIcons = {Home:'🏠', Bills:'📋', Calendar:'📅', Bank:'🏦', Settings:'⚙️'};
-
-  function MainTabs(){
-    return (
-      <Tabs.Navigator
-        screenOptions={({route}) => ({
-          headerShown: false,
-          tabBarIcon: ({focused}) => {
-            const {Text} = require('react-native');
-            return (
-              <Text style={{fontSize: 20, opacity: focused ? 1 : 0.5}}>
-                {tabIcons[route.name]}
-              </Text>
-            );
-          },
-          tabBarLabel: route.name,
-          tabBarActiveTintColor: isDark ? '#6FD09A' : '#0B4226',
-          tabBarInactiveTintColor: isDark ? '#A6B8AE' : '#36454F',
-          tabBarLabelStyle: {fontSize:11, fontFamily:'Inter', fontWeight:'600', marginBottom:2},
-          tabBarStyle: {
-            backgroundColor: shellBg,
-            borderTopWidth:1,
-            borderTopColor: isDark ? '#2A3A33' : '#9BB38C',
-            paddingTop:6,
-            height:62,
-          },
-        })}
-      >
-        <Tabs.Screen name="Home">
-          {props => <DashboardScreen {...props} bills={enrichedBills} autoSave={autoSave} />}
-        </Tabs.Screen>
-        <Tabs.Screen name="Bills">{props => <AutoPayScreen {...props} bills={enrichedBills} onToggleAutoPay={toggleBillAutoPay} />}</Tabs.Screen>
-        <Tabs.Screen name="Calendar">{props => <CalendarScreen {...props} bills={enrichedBills} />}</Tabs.Screen>
-        <Tabs.Screen name="Bank" component={BankConnectScreen} />
-        <Tabs.Screen name="Settings">
-          {props => <SettingsScreen {...props} themeMode={themeMode} onThemeModeChange={setThemeMode} onSignOut={handleSignOut} />}
-        </Tabs.Screen>
-      </Tabs.Navigator>
-    );
-  }
+  const appStateValue = useMemo(() => ({
+    enrichedBills,
+    autoSave,
+    toggleBillAutoPay,
+    handleSignOut,
+  }), [enrichedBills, autoSave, toggleBillAutoPay, handleSignOut]);
 
   return (
+    <AppStateContext.Provider value={appStateValue}>
     <ThemeProvider mode={themeMode} setMode={setThemeMode}>
       <SafeAreaProvider>
       <SafeAreaView style={{flex:1, backgroundColor: shellBg}}>
@@ -407,5 +426,6 @@ export default function App(){
       </SafeAreaView>
     </SafeAreaProvider>
     </ThemeProvider>
+    </AppStateContext.Provider>
   );
 }
