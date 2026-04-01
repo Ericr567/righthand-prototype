@@ -124,6 +124,12 @@ export default function BankConnectScreen({navigation}) {
     }
   }
 
+  async function handleSecureConnect() {
+    await handleContinue();
+  }
+
+  const canSecureConnect = !connecting && !!selected && (Platform.OS !== 'web' || linkReady);
+
   async function handleVisitWebsite() {
     setError('');
     const url = normalizeUrl(selected?.login_url || selected?.url);
@@ -226,17 +232,19 @@ export default function BankConnectScreen({navigation}) {
         <TouchableOpacity
           style={[
             styles.connectBtn,
-            (connecting || !selected || (Platform.OS === 'web' && !linkReady)) && styles.connectBtnDisabled,
+            !canSecureConnect && styles.connectBtnDisabled,
           ]}
-          onPress={handleContinue}
-          disabled={connecting || !selected || (Platform.OS === 'web' && !linkReady)}
+          onPress={handleSecureConnect}
+          disabled={!canSecureConnect}
           accessibilityRole="button"
-          accessibilityLabel="Connect to Plaid"
+          accessibilityLabel="Securely connect to Plaid"
         >
           <Text style={styles.connectBtnText}>
-            {connecting ? 'Connecting to Plaid...' : 'Connect to Plaid'}
+            {connecting ? 'Connecting to Plaid...' : 'Securely Connect to Plaid'}
           </Text>
         </TouchableOpacity>
+
+        <Text style={styles.secureNote}>This launches Plaid secure Link for encrypted bank connection.</Text>
 
         <TouchableOpacity
           style={[styles.websiteBtn, !selected && styles.connectBtnDisabled]}
@@ -380,6 +388,7 @@ const createStyles = (colors) => StyleSheet.create({
   },
   connectBtnDisabled: {opacity: 0.6},
   connectBtnText: {fontSize: 15, fontWeight: '800', fontFamily: 'Inter', color: colors.onPrimary},
+  secureNote: {fontSize: 11, fontFamily: 'Inter', color: colors.textSecondary, marginTop: 8, textAlign: 'center'},
   websiteBtn: {
     marginTop: 10,
     borderWidth: 1,
@@ -443,8 +452,7 @@ async function searchInstitutions(query) {
   const endpoint = q
     ? `/.netlify/functions/plaid-search-institutions?q=${encodeURIComponent(q)}`
     : '/.netlify/functions/plaid-search-institutions';
-  const res = await fetch(endpoint);
-  const data = await res.json();
+  const {res, data} = await fetchJson(endpoint);
   if (!res.ok || !Array.isArray(data.institutions)) {
     throw new Error(data.error || 'Unable to search institutions.');
   }
@@ -468,13 +476,11 @@ function formatDomain(raw) {
 }
 
 async function createLinkToken() {
-  const res = await fetch('/.netlify/functions/plaid-create-link-token', {
+  const {res, data} = await fetchJson('/.netlify/functions/plaid-create-link-token', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({userId: `user-${Date.now()}`}),
   });
-
-  const data = await res.json();
   if (!res.ok || !data.link_token) {
     throw new Error(data.error || 'Unable to create Plaid link token.');
   }
@@ -482,15 +488,32 @@ async function createLinkToken() {
 }
 
 async function exchangePublicToken(publicToken, institutionName) {
-  const res = await fetch('/.netlify/functions/plaid-exchange-public-token', {
+  const {res, data} = await fetchJson('/.netlify/functions/plaid-exchange-public-token', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({publicToken, institutionName}),
   });
-
-  const data = await res.json();
   if (!res.ok || !data.ok) {
     throw new Error(data.error || 'Unable to exchange Plaid token.');
   }
   return data;
+}
+
+async function fetchJson(url, options) {
+  let res;
+  try {
+    res = await fetch(url, options);
+  } catch {
+    throw new Error('Unable to reach backend. Start with "npx netlify dev" and try again.');
+  }
+
+  const text = await res.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error('Backend returned an invalid response. Run using "npx netlify dev".');
+  }
+
+  return {res, data};
 }

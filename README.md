@@ -32,6 +32,7 @@ Set these Netlify environment variables before deploying:
 - `PLAID_CLIENT_ID`
 - `PLAID_SECRET`
 - `PLAID_ENV` (`sandbox`, `development`, or `production`)
+- `PLAID_TOKEN_ENCRYPTION_KEY` (base64-encoded 32-byte key for server-side token encryption)
 - `PLAID_PRODUCTS` (optional, default: `auth,transactions`)
 - `PLAID_COUNTRY_CODES` (optional, default: `US`)
 - `PLAID_REDIRECT_URI` (optional, required for some OAuth institutions)
@@ -41,7 +42,23 @@ Serverless endpoints added:
 - `/.netlify/functions/plaid-create-link-token`
 - `/.netlify/functions/plaid-exchange-public-token`
 
-Important: this is prototype-safe only. The exchange function currently returns a success payload and does not persist tokens. For production, store encrypted `access_token` and `item_id` in your backend database.
+The exchange function now persists encrypted `access_token` + `item_id` into Netlify Blobs (`plaid-items` store) and returns only a safe confirmation payload.
+
+### Local environment setup
+
+1. Copy `.env.example` to `.env`.
+2. Fill your real Plaid values in `.env`:
+	- `PLAID_CLIENT_ID`
+	- `PLAID_SECRET`
+	- `PLAID_ENV=production` (or `development` / `sandbox`)
+	- `PLAID_TOKEN_ENCRYPTION_KEY` (generate with `openssl rand -base64 32`)
+3. Keep `.env` local only (already gitignored).
+
+If you run through Netlify local dev, these values are used by Netlify Functions.
+
+### Netlify production setup
+
+Add the same variables in Netlify Site Settings -> Environment Variables, then redeploy.
 
 ---
 

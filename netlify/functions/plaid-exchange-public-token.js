@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+const {getStore} = require('@netlify/blobs');
 const {Configuration, PlaidApi, PlaidEnvironments} = require('plaid');
 
 function getPlaidClient() {
@@ -23,6 +25,43 @@ function getPlaidClient() {
   return new PlaidApi(config);
 }
 
+function getEncryptionKey() {
+  const raw = process.env.PLAID_TOKEN_ENCRYPTION_KEY;
+  if (!raw) {
+    throw new Error('Missing PLAID_TOKEN_ENCRYPTION_KEY');
+  }
+
+  const key = Buffer.from(raw, 'base64');
+  if (key.length !== 32) {
+    throw new Error('PLAID_TOKEN_ENCRYPTION_KEY must decode to 32 bytes (base64-encoded)');
+  }
+
+  return key;
+}
+
+function encryptAccessToken(accessToken, key) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const ciphertext = Buffer.concat([
+    cipher.update(accessToken, 'utf8'),
+    cipher.final(),
+  ]);
+  const authTag = cipher.getAuthTag();
+
+  return {
+    alg: 'aes-256-gcm',
+    iv: iv.toString('base64'),
+    authTag: authTag.toString('base64'),
+    ciphertext: ciphertext.toString('base64'),
+  };
+}
+
+async function persistItemSecret(record) {
+  const store = getStore({name: 'plaid-items'});
+  const key = `item:${record.itemId}`;
+  await store.setJSON(key, record);
+}
+
 exports.handler = async function handler(event) {
   if (event.httpMethod !== 'POST') {
     return {
@@ -45,22 +84,47 @@ exports.handler = async function handler(event) {
     }
 
     const exchange = await plaidClient.itemPublicTokenExchange({public_token: publicToken});
+    const itemId = exchange.data.item_id;
+    const accessToken = exchange.data.access_token;
 
-    // Prototype: return a short confirmation only.
-    // In production, persist encrypted access_token + item_id in your backend datastore.
+    if (!itemId || !accessToken) {
+      throw new Error('Plaid exchange response missing item_id or access_token');
+    }
+
+    const encryptionKey = getEncryptionKey();
+    const encryptedToken = encryptAccessToken(accessToken, encryptionKey);
+    const nowIso = new Date().toISOString();
+
+    await persistItemSecret({
+      itemId,
+      institutionName,
+      plaidEnv: (process.env.PLAID_ENV || 'sandbox').toLowerCase(),
+      encryptedAccessToken: encryptedToken,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    });
+
     return {
       statusCode: 200,
       body: JSON.stringify({
         ok: true,
         institutionName,
-        itemId: exchange.data.item_id,
+        itemId,
       }),
     };
   } catch (error) {
     console.error('plaid-exchange-public-token failed', error.response?.data || error.message);
+    const message = typeof error.message === 'string' ? error.message : '';
+    const isConfigError =
+      message.startsWith('Missing PLAID_') ||
+      message.includes('PLAID_TOKEN_ENCRYPTION_KEY must decode to 32 bytes');
+    const statusCode = isConfigError ? 400 : 500;
+    const safeError = isConfigError
+      ? `${message}. Verify local .env and Netlify environment variables.`
+      : 'Failed to exchange public token';
     return {
-      statusCode: 500,
-      body: JSON.stringify({error: 'Failed to exchange public token'}),
+      statusCode,
+      body: JSON.stringify({error: safeError}),
     };
   }
 };

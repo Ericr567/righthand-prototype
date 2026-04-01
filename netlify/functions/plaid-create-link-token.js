@@ -71,9 +71,14 @@ exports.handler = async function handler(event) {
     };
   } catch (error) {
     console.error('plaid-create-link-token failed', error.response?.data || error.message);
+    const isConfigError = typeof error.message === 'string' && error.message.startsWith('Missing PLAID_');
+    const statusCode = isConfigError ? 400 : 500;
+    const safeError = isConfigError
+      ? `${error.message}. Add it to your local .env and Netlify environment variables.`
+      : 'Failed to create link token';
     return {
-      statusCode: 500,
-      body: JSON.stringify({error: 'Failed to create link token'}),
+      statusCode,
+      body: JSON.stringify({error: safeError}),
     };
   }
 };

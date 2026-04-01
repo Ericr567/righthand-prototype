@@ -3,5 +3,10 @@ node_modules
 web-build
 .DS_Store
 
+# Environment files (keep real secrets local only)
+.env
+.env.local
+.env.*.local
+
 # Local Netlify folder
 .netlify
