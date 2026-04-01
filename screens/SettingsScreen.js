@@ -30,14 +30,7 @@ export default function SettingsScreen({navigation, themeMode = 'light', onTheme
   const styles = createStyles(colors);
 
   function openBankAccounts() {
-    // Prefer switching to the Bank tab from Settings.
-    const parent = navigation.getParent?.();
-    if (parent?.navigate) {
-      parent.navigate('Bank');
-      return;
-    }
-
-    navigation.navigate('BankConnect');
+    navigation.navigate('Bank');
   }
 
   return (
